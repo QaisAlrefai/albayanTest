@@ -104,7 +104,7 @@ class UpdateDialog(QDialog):
         self.progress_dialog.setValue(progress)
         self.progress_dialog.setLabelText(f"تم تنزيل {downloaded/1024/1024:.2f} MB من {total/1024/1024:.2f} MB")
 
-    def on_download_finished(self, download_id, file_path):
+    def on_download_finished(self, download_id, file_path: str):
         logger.info(f"Download finished. Starting installation: {file_path}")
         self.progress_dialog.hide()
         try:

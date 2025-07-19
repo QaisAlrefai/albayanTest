@@ -87,12 +87,12 @@ class DownloadWorker(QRunnable):
 
         if not self._cancelled and not self.manager._cancel_all:
             os.replace(self.temp_path, self.final_path)
-            file_hash = calculate_sha256(self.final_path)
-            logger.info(f"[Completed] ID={self.download_id} | Hash={file_hash}")
+            logger.info(f"[Download Completed] ID={self.download_id}")
             self.callbacks["status"](self.download_id, DownloadStatus.COMPLETED)
-            self.callbacks["finished"](self.download_id, self.filename)
+            self.callbacks["finished"](self.download_id, self.final_path)
 
             if self.db:
+                file_hash = calculate_sha256(self.final_path)
                 self.db.upsert({
                     **self.item,
                     "downloaded_bytes": downloaded_size,

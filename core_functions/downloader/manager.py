@@ -9,7 +9,7 @@ from .db import DownloadDB
 
 class DownloaderManager(QObject):
     download_progress = pyqtSignal(int, str, int, int, int)       # id, filename, downloaded, total, percent
-    download_finished = pyqtSignal(int, str)                      # id, filename
+    download_finished = pyqtSignal(int, str)                      # id, file_path
     error = pyqtSignal(int, str)                         # id, error message
     status_changed = pyqtSignal(int, DownloadStatus)     # id, new status
 
