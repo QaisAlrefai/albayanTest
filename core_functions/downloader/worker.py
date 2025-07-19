@@ -5,6 +5,7 @@ from PyQt6.QtCore import QRunnable, pyqtSlot, QThread
 from .enums import DownloadStatus
 from .db import DownloadDB
 from .manager import DownloaderManager
+from utils.func import calculate_sha256
 from utils.logger import LoggerManager
 
 logger = LoggerManager.get_logger(__name__)
@@ -77,25 +78,29 @@ class DownloadWorker(QRunnable):
                             self.download_id, DownloadStatus.DOWNLOADING
                         )
 
-                        self.db.upsert({
-                            **self.item,
-                            "downloaded_bytes": downloaded_size,
-                            "total_bytes": total_size,
-                            "status": DownloadStatus.DOWNLOADING
-                        })
+                        if self.db:
+                            self.db.upsert({
+                                **self.item,
+                                "downloaded_bytes": downloaded_size,
+                                "total_bytes": total_size,
+                                "status": DownloadStatus.DOWNLOADING
+                            })
 
         if not self._cancelled and not self.manager._cancel_all:
             os.replace(self.temp_path, self.final_path)
-            logger.info(f"[Completed] ID={self.download_id}")
+            file_hash = calculate_sha256(self.final_path)
+            logger.info(f"[Completed] ID={self.download_id} | Hash={file_hash}")
             self.callbacks["status"](self.download_id, DownloadStatus.COMPLETED)
             self.callbacks["finished"](self.download_id, self.filename)
 
-            self.db.upsert({
-                **self.item,
-                "downloaded_bytes": downloaded_size,
-                "total_bytes": total_size,
-                "status": DownloadStatus.COMPLETED
-            })
+            if self.db:
+                self.db.upsert({
+                    **self.item,
+                    "downloaded_bytes": downloaded_size,
+                    "total_bytes": total_size,
+                    "file_hash": file_hash,
+                    "status": DownloadStatus.COMPLETED
+                })
 
     def pause(self) -> None:
         logger.debug(f"[Paused] ID={self.download_id}")
