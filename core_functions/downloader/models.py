@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, Integer, DateTime, Enum as SqlEnum
-from .enums import DownloadStatus
+from .status import DownloadStatus
 
 # Base for declarative models
 Base = declarative_base()

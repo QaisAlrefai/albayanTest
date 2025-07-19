@@ -3,29 +3,29 @@ from typing import List, Dict, Optional, Type
 from PyQt6.QtCore import QObject, QThreadPool, pyqtSignal
 
 from .worker import DownloadWorker
-from .enums import DownloadStatus
-from .db import DownloadDB  # Wrapper for SQLAlchemy DB logic
-from .models import Base  # Only needed for type hinting
+from .status import DownloadStatus
+from .db import DownloadDB
 
 
 class DownloaderManager(QObject):
-    progress = pyqtSignal(int, str, int, int, int)       # id, filename, downloaded, total, percent
-    finished = pyqtSignal(int, str)                      # id, filename
+    download_progress = pyqtSignal(int, str, int, int, int)       # id, filename, downloaded, total, percent
+    download_finished = pyqtSignal(int, str)                      # id, filename
     error = pyqtSignal(int, str)                         # id, error message
     status_changed = pyqtSignal(int, DownloadStatus)     # id, new status
 
     def __init__(
         self,
         urls: Optional[List[str]] = None,
-        default_folder: str = "downloads",
+        download_folder: str = "downloads",
         max_workers: int = 3,
         load_history: bool = False,
         save_history: bool = False,
         download_db: Optional[DownloadDB] = None,
     ):
         super().__init__()
+        self.urls = [urls ]if isinstance(urls, str) else urls or []
         self.save_history = save_history
-        self.default_folder = default_folder
+        self.download_folder = download_folder
         self.pool = QThreadPool.globalInstance()
         self.pool.setMaxThreadCount(max_workers)
 
@@ -40,8 +40,8 @@ class DownloaderManager(QObject):
         if load_history and self.db:
             self._load_history()
 
-        if urls:
-            self._add_new_downloads(urls)
+        if self.urls:
+            self._add_new_downloads(self.urls)
 
     def _load_history(self):
         if not self.db:
@@ -61,7 +61,7 @@ class DownloaderManager(QObject):
     def _add_new_downloads(self, urls: List[str]):
         for url in urls:
             filename = os.path.basename(url)
-            folder = self.default_folder
+            folder = self.download_folder
 
             if self.db and self.save_history:
                 item_data = {
@@ -106,7 +106,7 @@ class DownloaderManager(QObject):
             self.pool.start(worker)
 
     def _on_progress(self, download_id: int, filename: str, downloaded: int, total: int, percent: int):
-        self.progress.emit(download_id, filename, downloaded, total, percent)
+        self.download_progress.emit(download_id, filename, downloaded, total, percent)
 
     def _on_status(self, download_id: int, new_status: DownloadStatus):
         self._downloads[download_id]["status"] = new_status
@@ -119,10 +119,7 @@ class DownloaderManager(QObject):
         self.error.emit(download_id, message)
 
     def _on_finished(self, download_id: int, filename: str):
-        self.finished.emit(download_id, filename)
-        if self.db and self.save_history:
-            self.db.mark_completed(download_id)
-
+        self.download_finished.emit(download_id, filename)
     def pause(self, download_id: int):
         if worker := self._downloads.get(download_id, {}).get("worker"):
             worker.pause()

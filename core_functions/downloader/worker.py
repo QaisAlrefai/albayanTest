@@ -2,9 +2,8 @@ import os
 import requests
 from typing import Callable, Dict
 from PyQt6.QtCore import QRunnable, pyqtSlot, QThread
-from .enums import DownloadStatus
+from .status import DownloadStatus
 from .db import DownloadDB
-from .manager import DownloaderManager
 from utils.func import calculate_sha256
 from utils.logger import LoggerManager
 
@@ -12,7 +11,7 @@ logger = LoggerManager.get_logger(__name__)
 
 
 class DownloadWorker(QRunnable):
-    def __init__(self, item_data: dict, callbacks: Dict[str, Callable], manager: DownloaderManager):
+    def __init__(self, item_data: dict, callbacks: Dict[str, Callable], manager):
         super().__init__()
         self.item = item_data
         self.callbacks = callbacks
