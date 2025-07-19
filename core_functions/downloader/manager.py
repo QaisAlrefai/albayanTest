@@ -1,31 +1,51 @@
 import os
-import uuid
+from typing import List, Dict, Optional, Type
 from PyQt6.QtCore import QObject, QThreadPool, pyqtSignal
+
 from .worker import DownloadWorker
 from .enums import DownloadStatus
-from .db import DownloadDB
+from .db import DownloadDB  # Wrapper for SQLAlchemy DB logic
+from .models import Base  # Only needed for type hinting
+
 
 class DownloaderManager(QObject):
-    progress = pyqtSignal(str, str, int, int, int)
-    finished = pyqtSignal(str, str)
-    error = pyqtSignal(str, str)
-    status = pyqtSignal(str, DownloadStatus)
+    progress = pyqtSignal(int, str, int, int, int)       # id, filename, downloaded, total, percent
+    finished = pyqtSignal(int, str)                      # id, filename
+    error = pyqtSignal(int, str)                         # id, error message
+    status_changed = pyqtSignal(int, DownloadStatus)     # id, new status
 
-    def __init__(self, urls=None, default_folder="downloads", max_workers=3):
+    def __init__(
+        self,
+        urls: Optional[List[str]] = None,
+        default_folder: str = "downloads",
+        max_workers: int = 3,
+        load_history: bool = False,
+        save_history: bool = False,
+        download_db: Optional[DownloadDB] = None,
+    ):
         super().__init__()
+        self.save_history = save_history
         self.default_folder = default_folder
-        self._pause_all = False
-        self._cancel_all = False
-        self.db = DownloadDB()
         self.pool = QThreadPool.globalInstance()
         self.pool.setMaxThreadCount(max_workers)
 
-        self._downloads = {}  # id → metadata
-        self._load_state()
+        self._downloads: Dict[int, Dict] = {}
+        self._pause_all = False
+        self._cancel_all = False
+        self.db = download_db
+
+        if not self.db and (save_history or load_history):
+            raise ValueError("DownloadDB instance is required for saving or loading history.")
+
+        if load_history and self.db:
+            self._load_history()
+
         if urls:
             self._add_new_downloads(urls)
 
-    def _load_state(self):
+    def _load_history(self):
+        if not self.db:
+            return
         for item in self.db.all():
             self._downloads[item.id] = {
                 "id": item.id,
@@ -35,81 +55,102 @@ class DownloaderManager(QObject):
                 "status": item.status,
                 "downloaded_bytes": item.downloaded_bytes,
                 "total_bytes": item.total_bytes,
-                "file_hash": item.file_hash
+                "file_hash": item.file_hash,
             }
 
-    def _add_new_downloads(self, urls):
+    def _add_new_downloads(self, urls: List[str]):
         for url in urls:
             filename = os.path.basename(url)
             folder = self.default_folder
-            download_id = str(uuid.uuid4())
-            new_entry = {
+
+            if self.db and self.save_history:
+                item_data = {
+                    "url": url,
+                    "filename": filename,
+                    "folder_path": folder,
+                    "status": DownloadStatus.PENDING,
+                    "downloaded_bytes": 0,
+                    "total_bytes": 0
+                }
+                download_id = self.db.upsert(item_data)
+            else:
+                download_id = len(self._downloads) + 1
+
+            self._downloads[download_id] = {
                 "id": download_id,
                 "url": url,
                 "filename": filename,
                 "folder_path": folder,
-                "status": DownloadStatus.PENDING.value
+                "status": DownloadStatus.PENDING,
+                "downloaded_bytes": 0,
+                "total_bytes": 0,
+                "file_hash": None,
             }
-            self.db.upsert(new_entry)
-            self._downloads[download_id] = new_entry
 
     def start(self):
         for download_id, info in self._downloads.items():
-            if info["status"] in (DownloadStatus.COMPLETED.value, DownloadStatus.CANCELLED.value):
+            if info["status"] in (DownloadStatus.COMPLETED, DownloadStatus.CANCELLED):
                 continue
-            worker = DownloadWorker(info, {
-                "progress": self._on_progress,
-                "finished": self._on_finished,
-                "status": self._on_status,
-                "error": self._on_error,
-            }, manager=self)
+
+            worker = DownloadWorker(
+                info,
+                callbacks={
+                    "progress": self._on_progress,
+                    "finished": self._on_finished,
+                    "status": self._on_status,
+                    "error": self._on_error
+                },
+                manager=self
+            )
             self._downloads[download_id]["worker"] = worker
             self.pool.start(worker)
 
-    def _on_progress(self, download_id, filename, downloaded, total, percent):
+    def _on_progress(self, download_id: int, filename: str, downloaded: int, total: int, percent: int):
         self.progress.emit(download_id, filename, downloaded, total, percent)
 
-    def _on_status(self, download_id, status):
-        self._downloads[download_id]["status"] = status.value
-        self.status.emit(download_id, status)
+    def _on_status(self, download_id: int, new_status: DownloadStatus):
+        self._downloads[download_id]["status"] = new_status
+        self.status_changed.emit(download_id, new_status)
 
-    def _on_error(self, download_id, message):
+        if self.db and self.save_history:
+            self.db.update_status(download_id, new_status)
+
+    def _on_error(self, download_id: int, message: str):
         self.error.emit(download_id, message)
 
-    def _on_finished(self, download_id, filename):
+    def _on_finished(self, download_id: int, filename: str):
         self.finished.emit(download_id, filename)
+        if self.db and self.save_history:
+            self.db.mark_completed(download_id)
 
-    def pause(self, download_id):
+    def pause(self, download_id: int):
         if worker := self._downloads.get(download_id, {}).get("worker"):
             worker.pause()
 
-    def resume(self, download_id):
+    def resume(self, download_id: int):
         if worker := self._downloads.get(download_id, {}).get("worker"):
             worker.resume()
 
-    def cancel(self, download_id):
+    def cancel(self, download_id: int):
         if worker := self._downloads.get(download_id, {}).get("worker"):
             worker.cancel()
 
     def pause_all(self):
         self._pause_all = True
-        for info in self._downloads.values():
-            if info.get("worker"):
-                info["worker"].pause()
+        for download_id in self._downloads:
+            self.pause(download_id)
 
     def resume_all(self):
         self._pause_all = False
-        for info in self._downloads.values():
-            if info.get("worker"):
-                info["worker"].resume()
+        for download_id in self._downloads:
+            self.resume(download_id)
 
     def cancel_all(self):
         self._cancel_all = True
-        for info in self._downloads.values():
-            if info.get("worker"):
-                info["worker"].cancel()
+        for download_id in self._downloads:
+            self.cancel(download_id)
 
-    def get_download_map(self):
+    def get_download_map(self) -> Dict[int, Dict]:
         return {
             download_id: {
                 "url": data["url"],

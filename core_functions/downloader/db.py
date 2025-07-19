@@ -1,40 +1,50 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from .models import Base, DownloadItem
-from datetime import datetime
+from sqlalchemy.exc import SQLAlchemyError
+from .models import Base, DownloadTableBase
+from utils.logger import LoggerManager
+
+logger = LoggerManager.get_logger(__name__)
 
 class DownloadDB:
-    def __init__(self, db_url="sqlite:///downloads.db"):
+    def __init__(self, db_url: str, download_table: DownloadTableBase):
+        self.download_table = download_table
         self.engine = create_engine(db_url, echo=False)
-        Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
+        download_table.metadata.create_all(self.engine)
 
     def upsert(self, item_data: dict):
-        session = self.Session()
-        try:
-            obj = session.query(DownloadItem).filter_by(id=item_data["id"]).first()
-            if obj:
-                for key, value in item_data.items():
-                    setattr(obj, key, value)
-            else:
-                item_data.setdefault("created_at", datetime.utcnow())
-                obj = DownloadItem(**item_data)
-                session.add(obj)
-            session.commit()
-        finally:
-            session.close()
+        with self.Session() as session:
+            try:
+                obj = session.query(self.download_table).filter_by(id=item_data.get("id")).first()
+                if obj:
+                    for key, value in item_data.items():
+                        setattr(obj, key, value)
+                else:
+                    obj = self.download_table(**item_data)
+                    session.add(obj)
+                session.commit()
+                return obj.id
+            except SQLAlchemyError as e:
+                logger.error(f"Error upserting download item: {e}")
+                session.rollback()
+                return None
 
     def all(self):
-        session = self.Session()
-        try:
-            return session.query(DownloadItem).all()
-        finally:
-            session.close()
+        with self.Session() as session:
+            try:
+                return session.query(self.download_table).all()
+            except SQLAlchemyError as e:
+                logger.error(f"Error fetching all download items: {e}")
+                return []
 
     def delete(self, download_id: str):
-        session = self.Session()
-        try:
-            session.query(DownloadItem).filter_by(id=download_id).delete()
-            session.commit()
-        finally:
-            session.close()
+        with self.Session() as session:
+            try:
+                session.query(self.download_table) \
+                       .filter_by(id=download_id) \
+                       .delete()
+                session.commit()
+            except SQLAlchemyError as e:
+                logger.error(f"Error deleting download item with id {download_id}: {e}")
+                session.rollback()
