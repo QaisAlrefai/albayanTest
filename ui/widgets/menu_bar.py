@@ -40,7 +40,7 @@ class MenuBar(QMenuBar):
         self.previous_action = QAction("السابق", self)
         self.previous_action.triggered.connect(self.parent.OnBack)
         self.go_to_saved_position_action = QAction("الذهاب إلى الموضع المحفوظ", self)
-        self.go_to_saved_position_action.triggered.connect(self.parent.set_text)
+        self.go_to_saved_position_action.triggered.connect(lambda: self.parent.set_text(True))
         self.go_to_saved_position_action.triggered.connect(lambda: Globals.effects_manager.play("move"))
         self.search_action = QAction("البحث", self)
         self.search_action.triggered.connect(self.parent.OnSearch)        

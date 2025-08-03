@@ -73,7 +73,9 @@ class QuranInterface(QMainWindow):
         self.tray_manager = SystemTrayManager(self, program_name, program_icon)
         self.create_widgets()
         self.create_layout()
-        self.set_text()
+        
+        self.set_text(Config.general.auto_restore_position_enabled)
+        logger.debug(f"restore setting is: {Config.general.auto_restore_position_enabled}")
         self.set_shortcut()
         logger.debug("QuranInterface initialized successfully.")
 
@@ -174,10 +176,15 @@ class QuranInterface(QMainWindow):
         self.centralWidget().setLayout(layout)
 
 
-    def set_text(self):
+    def set_text(self, restore: bool = True):
         logger.debug("Loading Quran text...")
-        ayah_number = self.preferences_manager.get_int("current_ayah_number", 1)
-        current_position = self.preferences_manager.get_int("current_position", 1)
+        if not restore:
+            current_position = 1
+            ayah_number = 1
+        else:
+            ayah_number = self.preferences_manager.get_int("current_ayah_number", 1)
+            current_position = self.preferences_manager.get_int("current_position")
+
         mode = self.preferences_manager.get_int("navigation_mode", NavigationMode.SURAH.value)
         self.quran_manager.navigation_mode = NavigationMode.from_int(mode)
         logger.debug(f"Current position: {current_position}, Ayah number: {ayah_number}, Mode: {self.quran_manager.navigation_mode}")
