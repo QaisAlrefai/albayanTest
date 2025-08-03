@@ -38,6 +38,7 @@ class GeneralSettings(BaseSection):
     run_in_background_enabled: bool = False
     auto_start_enabled: bool = False
     auto_save_position_enabled: bool = False
+    auto_restore_position_enabled: bool = True
     check_update_enabled: bool = True
     log_level: str = "ERROR"
 
