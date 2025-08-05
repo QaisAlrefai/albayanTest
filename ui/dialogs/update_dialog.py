@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QKeySequence, QShortcut
 from core_functions.downloader import DownloaderManager
+from core_functions.downloader.status import DownloadProgress
 from ui.widgets.qText_edit import ReadOnlyTextEdit
 from utils.const import program_name, temp_folder
 from utils.logger import LoggerManager
@@ -100,9 +101,12 @@ class UpdateDialog(QDialog):
         self.downloader.start()
         logger.info("Download thread started.")
 
-    def on_download_progress(self, download_id: int, file: str, downloaded: int, total: int, progress: int):
-        self.progress_dialog.setValue(progress)
-        self.progress_dialog.setLabelText(f"تم تنزيل {downloaded/1024/1024:.2f} MB من {total/1024/1024:.2f} MB")
+    def on_download_progress(self, progress: DownloadProgress):
+        self.progress_dialog.setValue(progress.percentage)
+        self.progress_dialog.setLabelText(
+            f"تم تنزيل {progress.downloaded_str} من {progress.total_str}\n"
+        f"السرعة: {progress.speed_kbps:.2f} KB/s | الوقت المنقضي: {progress.elapsed_time_str} | الوقت المتبقي: {progress.remaining_time_str}"
+    )
 
     def on_download_finished(self, download_id, file_path: str):
         logger.info(f"Download finished. Starting installation: {file_path}")

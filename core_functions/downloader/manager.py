@@ -1,14 +1,15 @@
+
 import os
 from typing import List, Dict, Optional, Type
 from PyQt6.QtCore import QObject, QThreadPool, pyqtSignal
 
 from .worker import DownloadWorker
-from .status import DownloadStatus
+from .status import DownloadStatus, DownloadProgress
 from .db import DownloadDB
 
 
 class DownloaderManager(QObject):
-    download_progress = pyqtSignal(int, str, int, int, int)       # id, filename, downloaded, total, percent
+    download_progress = pyqtSignal(DownloadProgress)
     download_finished = pyqtSignal(int, str)                      # id, file_path
     error = pyqtSignal(int, str)                         # id, error message
     status_changed = pyqtSignal(int, DownloadStatus)     # id, new status
@@ -105,8 +106,8 @@ class DownloaderManager(QObject):
             self._downloads[download_id]["worker"] = worker
             self.pool.start(worker)
 
-    def _on_progress(self, download_id: int, filename: str, downloaded: int, total: int, percent: int):
-        self.download_progress.emit(download_id, filename, downloaded, total, percent)
+    def _on_progress(self, progress: DownloadProgress):
+        self.download_progress.emit(progress)
 
     def _on_status(self, download_id: int, new_status: DownloadStatus):
         self._downloads[download_id]["status"] = new_status
