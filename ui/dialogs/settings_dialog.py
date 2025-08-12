@@ -204,6 +204,14 @@ class SettingsDialog(QDialog):
         self.duration_spinbox.setRange(2, 15)
         self.duration_spinbox.setSingleStep(1)
 
+        self.repeat_limit_label = QLabel("عدد مرات تكرار الآية:")
+        self.repeat_limit_spinbox = SpinBox(self)
+        self.repeat_limit_spinbox.setAccessibleName(self.repeat_limit_label.text())        
+        self.repeat_limit_spinbox.setRange(0, 5)
+        self.repeat_limit_spinbox.setSingleStep(1)
+
+
+
         self.auto_move_focus_checkbox = QCheckBox("نقل المؤشر تلقائيًا إلى الآية التي يتم تشغيلها")
 
         self.group_listening_layout.addWidget(self.reciters_label)
@@ -213,6 +221,8 @@ class SettingsDialog(QDialog):
         self.group_listening_layout.addWidget(self.action_combo)
         self.group_listening_layout.addWidget(self.duration_label)
         self.group_listening_layout.addWidget(self.duration_spinbox)
+        self.group_listening_layout.addWidget(self.repeat_limit_label)
+        self.group_listening_layout.addWidget(self.repeat_limit_spinbox)
         self.group_listening_layout.addWidget(self.auto_move_focus_checkbox)
         self.group_listening.setLayout(self.group_listening_layout)
         self.group_listening_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
@@ -393,6 +403,7 @@ class SettingsDialog(QDialog):
         Config.listening.reciter = self.reciters_combo.currentData()
         Config.listening.action_after_listening = self.action_combo.currentData()
         Config.listening.forward_time = self.duration_spinbox.value()
+        Config.listening.repeat_count = self.repeat_limit_spinbox.value()
         Config.listening.auto_move_focus = self.auto_move_focus_checkbox.isChecked()
 
         Config.reading.font_type = self.font_type_combo.currentData().value
@@ -443,6 +454,7 @@ class SettingsDialog(QDialog):
         self.auto_restore_position_checkbox.setChecked(Config.general.auto_restore_position_enabled)
         self.update_checkbox.setChecked(Config.general.check_update_enabled)
         self.duration_spinbox.setValue(Config.listening.forward_time)
+        self.repeat_limit_spinbox.setValue(Config.listening.repeat_count)
         self.auto_move_focus_checkbox.setChecked(Config.listening.auto_move_focus)
         self.ignore_tashkeel_checkbox.setChecked(Config.search.ignore_tashkeel)
         self.ignore_hamza_checkbox.setChecked(Config.search.ignore_hamza)

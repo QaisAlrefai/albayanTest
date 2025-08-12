@@ -63,6 +63,7 @@ class ListeningSettings(BaseSection):
     SECTION_NAME: ClassVar[str] = "listening"
     reciter: int = 58
     action_after_listening: int = 0
+    repeat_count: int = 1
     forward_time: int = 5
     auto_move_focus: bool = True
 
