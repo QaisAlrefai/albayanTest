@@ -275,8 +275,10 @@ class AudioToolBar(QToolBar):
         self.set_buttons_status()
         repeat_count = Config.listening.repeat_count
         action_after_listening = Config.listening.action_after_listening
-        if repeat_count > 0:
-            if self.current_repeat < repeat_count - 1:
+        if self.navigation.current_ayah == 0:
+            logger.debug("Current Ayah is 0, skipping repeat logic.")
+        elif repeat_count > 0:
+            if self.current_repeat < repeat_count:
                 self.current_repeat += 1
                 logger.debug(f"Repeating Ayah: repeat {self.current_repeat}/{repeat_count}")
                 self.play_current_ayah()
