@@ -173,6 +173,7 @@ class AudioToolBar(QToolBar):
         self.reciters = AyahReciter(data_folder / "quran" / "reciters.db")
         self.navigation = NavigationManager(self.parent, self.parent.quran_manager)
         self.audio_thread = AudioPlayerThread(self.player, self.parent)
+        self.current_repeat = 0
         logger.debug("AudioToolBar initialized.")
 
         self.play_pause_button = self.create_button("تشغيلالآية الحالية", self.toggle_play_pause)
@@ -272,7 +273,18 @@ class AudioToolBar(QToolBar):
     def OnActionAfterListening(self):
         logger.debug("Action after listening triggered.")
         self.set_buttons_status()
+        repeat_count = Config.listening.repeat_count
         action_after_listening = Config.listening.action_after_listening
+        if repeat_count > 0:
+            if self.current_repeat < repeat_count - 1:
+                self.current_repeat += 1
+                logger.debug(f"Repeating Ayah: repeat {self.current_repeat}/{repeat_count}")
+                self.play_current_ayah()
+                return
+                
+            else:
+                self.current_repeat = 0
+        
         if action_after_listening == 2 or self.navigation.current_ayah == 0:
             self.navigation.has_basmala = True if self.navigation.current_ayah < 2 else False
             self.OnPlayNext()
