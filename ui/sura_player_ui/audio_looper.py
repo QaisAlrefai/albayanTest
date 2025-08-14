@@ -44,7 +44,7 @@ class AudioLooper:
             self.loop_end = self.player.get_length()
             logger.debug(f"Loop end adjusted to track length: {self.loop_end} ms.")
         logger.debug(f"Loop start set to {self.parent.format_time(self.loop_start)}.")
-        UniversalSpeech.say(f"تم تحديد البداية عند: {self.parent.format_time(self.loop_start)}.")
+        UniversalSpeech.say(f"تم تحديد البداية عند: {self.parent.format_time(self.loop_start)}.", force=True)
     
     def set_loop_end(self):
         """Set the end point (B) for the repeat loop."""
@@ -55,7 +55,7 @@ class AudioLooper:
             self.loop_start = 0
             logger.debug("Loop start reset to 0 because end is before start.")
         logger.debug(f"Loop end set to {self.parent.format_time(self.loop_end)}.")
-        UniversalSpeech.say(f"تم تحديد النهاية عند: {self.parent.format_time(self.loop_end)}.")
+        UniversalSpeech.say(f"تم تحديد النهاية عند: {self.parent.format_time(self.loop_end)}.", force=True)
     
     def toggle_loop(self):
         """
@@ -64,7 +64,7 @@ class AudioLooper:
         """
         logger.debug("Toggling loop playback.")
         if not self.loop_start  and  not self.loop_end:
-            UniversalSpeech.say("لم يتم تحديد البداية والنهاية.")
+            UniversalSpeech.say("لم يتم تحديد البداية والنهاية.", force=True)
             logger.warning("Loop start and end not set; cannot toggle loop.")
             return
 
@@ -72,14 +72,14 @@ class AudioLooper:
         logger.debug(f"Loop toggled {'ON' if self.loop_active else 'OFF'}.")
         if self.loop_active:
             logger.debug(f"Loop started from {self.loop_start} ms to {self.loop_end} ms.")
-            UniversalSpeech.say(f"بدأ التكرار من {self.parent.format_time(self.loop_start)} إلى {self.parent.format_time(self.loop_end)}.")
+            UniversalSpeech.say(f"بدأ التكرار من {self.parent.format_time(self.loop_start)} إلى {self.parent.format_time(self.loop_end)}.", force=True)
             # Start playback from the loop start and start the monitor timer.
             self.player.set_position(self.loop_start)
             self.player.play()
             logger.debug(f"Loop started from {self.parent.format_time(self.loop_start)} to {self.parent.format_time(self.loop_end)}.")
             self.monitor_timer.start()
         else:
-            UniversalSpeech.say("تم إيقاف التكرار.")
+            UniversalSpeech.say("تم إيقاف التكرار.", force=True)
             self.monitor_timer.stop()
             logger.debug("Loop stopped.")
 
@@ -128,13 +128,13 @@ class AudioLooper:
         """Return playback to the loop start point."""
         logger.debug("Returning to loop start point.")
         if self.loop_start == 0:
-            UniversalSpeech.say("لم يتم تحديد البداية.")
+            UniversalSpeech.say("لم يتم تحديد البداية.", force=True)
             logger.warning("Cannot return to start; loop start is not set.")
             return
 
         self.player.set_position(self.loop_start)
         logger.debug(f"Returning to loop start at {self.parent.format_time(self.loop_start)}.")
-        UniversalSpeech.say(f"يتم التشغيل من: {self.parent.format_time(self.loop_start)}.")
+        UniversalSpeech.say(f"يتم التشغيل من: {self.parent.format_time(self.loop_start)}.", force=True)
 
     def clear_loop(self):
         """Clear the loop points and stop the loop."""
@@ -150,7 +150,7 @@ class AudioLooper:
                         self.monitor_timer.stop()
         logger.debug("monitor timer stopped.")
 
-        UniversalSpeech.say(F"تم مسح البداية والنهاية وإيقاف التكرار.")
+        UniversalSpeech.say(F"تم مسح البداية والنهاية وإيقاف التكرار.", force=True)
         logger.debug("Loop points cleared.")
 
     def set_loop_delay(self, delay: int):

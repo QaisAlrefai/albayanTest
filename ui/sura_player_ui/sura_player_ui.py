@@ -457,20 +457,20 @@ class SuraPlayerWindow(QMainWindow):
         widgets = self.buttons + self.menubar.get_player_actions()
         for widget in widgets:
             widget.setEnabled(not active)
-        UniversalSpeech.say("وضع الفلترة مفعَّل. استخدم الأسهم اليمين و اليسار للتنقل بين القُرَّاء و السور، واستخدم الأسهم للأعلى والأسفل لتصفح المحدد، اكتب لتصفية القُرَّاء و السور." if active else "وضع الفلترة معطَّل.")
+        UniversalSpeech.say("وضع الفلترة مفعَّل. استخدم الأسهم اليمين و اليسار للتنقل بين القُرَّاء و السور، واستخدم الأسهم للأعلى والأسفل لتصفح المحدد، اكتب لتصفية القُرَّاء و السور." if active else "وضع الفلترة معطَّل.", force=True)
 
     def OnActiveCategoryChanged(self, label: str) -> None:
         logger.debug(f"Active category changed to: {label}")
-        UniversalSpeech.say(label)
+        UniversalSpeech.say(label, force=True)
 
     def OnSearchQueryUpdated(self, search_query: str) -> None:
         logger.debug(f"Search query updated: {search_query}")
-        UniversalSpeech.say(search_query)
+        UniversalSpeech.say(search_query, force=True)
         
     def OnItemSelectionChanged(self, widget: QComboBox, index: int) -> None:
         logger.debug(f"Selection changed in {widget.objectName()} to index {index}")
         widget.setCurrentIndex(index)            
-        UniversalSpeech.say(f"{widget.currentText()} {widget.currentIndex() + 1} من {widget.count()}")
+        UniversalSpeech.say(f"{widget.currentText()} {widget.currentIndex() + 1} من {widget.count()}", force=True)
 
     def OnOutOfRange(self):
         logger.debug("Out of range event triggered.")
@@ -484,7 +484,7 @@ class SuraPlayerWindow(QMainWindow):
 
         #Set last selected item before filtering
         widget.setCurrentText(selected_item_text)
-        UniversalSpeech.say(f"{widget.currentText()} {widget.currentIndex() + 1} من {widget.count()}", False)
+        UniversalSpeech.say(f"{widget.currentText()} {widget.currentIndex() + 1} من {widget.count()}", interrupt=False, force=True)
         logger.debug(f"Filtered selection set to {widget.currentText()} {widget.currentIndex() + 1} uf {widget.count()}")
 
     def keyPressEvent(self, event: QKeyEvent):

@@ -38,13 +38,13 @@ class KeyHandler:
 
         # Mapping shortcut keys to their corresponding actions
         self.shortcuts = {
-            ord("E"): lambda: UniversalSpeech.say(f"{parent.elapsed_time_label.text()}، الوقت المنقَضي."),
-            ord("R"): lambda: UniversalSpeech.say(f"{parent.remaining_time_label.text()}، الوقت المتبقي."),
-            ord("T"): lambda: UniversalSpeech.say(f"{parent.total_time.text()}، الوقت الإجمالي."),
-            ord("C"): lambda: UniversalSpeech.say(f"{parent.reciter_combo.currentText().split(' - ')[0]}، القارئ الحالي."),
-            ord("V"): lambda: UniversalSpeech.say(f"{parent.surah_combo.currentText()}، السورة الحالية."),
+            ord("E"): lambda: UniversalSpeech.say(f"{parent.elapsed_time_label.text()}، الوقت المنقَضي.", force=True),
+            ord("R"): lambda: UniversalSpeech.say(f"{parent.remaining_time_label.text()}، الوقت المتبقي.", force=True),
+            ord("T"): lambda: UniversalSpeech.say(f"{parent.total_time.text()}، الوقت الإجمالي.", force=True),
+            ord("C"): lambda: UniversalSpeech.say(f"{parent.reciter_combo.currentText().split(' - ')[0]}، القارئ الحالي.", force=True),
+            ord("V"): lambda: UniversalSpeech.say(f"{parent.surah_combo.currentText()}، السورة الحالية.", force=True),
             ord("I"): lambda: UniversalSpeech.say(
-                f"{parent.surah_combo.currentText()}، للقارئ، {parent.reciter_combo.currentText()}."
+                f"{parent.surah_combo.currentText()}، للقارئ، {parent.reciter_combo.currentText()}.", force=True
             ),
             Qt.Key_MediaTogglePlayPause: parent.toggle_play_pause,
             Qt.Key_MediaStop: parent.stop,

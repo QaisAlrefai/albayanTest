@@ -510,19 +510,19 @@ class QuranInterface(QMainWindow):
         logger.debug(f"Text to be spoken: {text}")
         if text:
             if self.toolbar.player.is_playing():
-                UniversalSpeech.say(f"{text}، الآية المشغلة.")
+                UniversalSpeech.say(f"{text}، الآية المشغلة.", force=True)
                 logger.debug(f"{text} is currently playing.")
             elif self.toolbar.player.is_paused():
-                UniversalSpeech.say(f"{text}، تم إيقافها مؤقتًا.")
+                UniversalSpeech.say(f"{text}، تم إيقافها مؤقتًا.", force=True)
                 logger.debug(f"{text} is paused.")
             elif self.toolbar.player.is_stopped():
-                UniversalSpeech.say(f"{text}، تم إيقافها.")
+                UniversalSpeech.say(f"{text}، تم إيقافها.", force=True)
                 logger.debug(f"{text} is stopped.")
             elif self.toolbar.player.is_stalled():
-                UniversalSpeech.say(f"{text}، يجري تحميلها.")
+                UniversalSpeech.say(f"{text}، يجري تحميلها.", force=True)
                 logger.debug(f"{text} is stalled.")
         else:
-            UniversalSpeech.say("لم يتم تشغيل أي آية.")
+            UniversalSpeech.say("لم يتم تشغيل أي آية.", force=True)
             logger.debug("No Ayah is currently playing.")
 
     def say_focused_ayah(self):
@@ -530,7 +530,7 @@ class QuranInterface(QMainWindow):
         current_aya = self.get_current_ayah()
         text = f"آية {current_aya.number_in_surah} من {current_aya.sura_name}، الآية الحالية."
         logger.debug(f"Text to be spoken: {text}")
-        UniversalSpeech.say(text)
+        UniversalSpeech.say(text, force=True)
 
     @exception_handler(ui_element=QMessageBox)
     def OnSaveBookmark(self, event):
