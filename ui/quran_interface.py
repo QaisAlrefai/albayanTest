@@ -66,6 +66,7 @@ class QuranInterface(QMainWindow):
         Globals.effects_manager = SoundEffectPlayer("Audio/sounds")
 
         self.toolbar = AudioToolBar(self)
+        self.toolbar.navigation.lastAyahReached.connect(self.on_last_ayah_reached)
         self.menu_bar = MenuBar(self)
         self.setMenuBar(self.menu_bar)
         self.addToolBar(self.toolbar)
@@ -659,3 +660,8 @@ class QuranInterface(QMainWindow):
         logger.debug("Random message dialog opened.")
         info_dialog.exec()
         logger.debug("Random message dialog closed.")
+
+    def on_last_ayah_reached(self):
+        logger.debug("Last Ayah reached signal received in QuranInterface.")
+        self.OnNext()
+        self.toolbar.toggle_play_pause()

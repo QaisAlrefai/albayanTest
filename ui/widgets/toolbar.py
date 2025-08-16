@@ -1,7 +1,7 @@
 import time
 from typing import Optional
 from PyQt6.QtWidgets import QToolBar, QPushButton, QSlider, QMessageBox
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QObject
 from core_functions.quran.quran_manager import QuranManager
 from core_functions.Reciters import AyahReciter
 from utils.audio_player import AyahPlayer
@@ -72,8 +72,10 @@ class AudioPlayerThread(QThread):
         self.wait()        
 
 
-class NavigationManager:
+class NavigationManager(QObject):
+    lastAyahReached = pyqtSignal()
     def __init__(self, parent, quran_manager: QuranManager):
+        super().__init__(parent)
         logger.debug("Initializing NavigationManager.")
         self.parent = parent
         self.quran_manager = quran_manager
@@ -121,6 +123,7 @@ class NavigationManager:
             else:
                 self.current_ayah = self.ayah_range[self.current_surah]["max_ayah"]
                 logger.debug("Reached the last Ayah in the page.")
+                self.lastAyahReached.emit()
                 return False
         elif direction == "previous" and self.current_ayah < self.ayah_range[self.current_surah]["min_ayah"]:
             if self.current_surah - 1 in self.ayah_range:
