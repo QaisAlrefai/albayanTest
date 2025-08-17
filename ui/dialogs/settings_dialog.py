@@ -485,6 +485,10 @@ class SettingsDialog(QDialog):
         self.tree_widget.setCurrentItem(self.listening_item)
         self.action_combo.setFocus()
 
+    def open_listening_tab_and_focus_repeat_limit(self):
+        self.tree_widget.setCurrentItem(self.listening_item)    
+        self.repeat_limit_spinbox.setFocus()
+
 
     def reject(self):
         self.deleteLater()

@@ -182,6 +182,10 @@ class MenuBar(QMenuBar):
         self.change_after_listening_action = QAction("تغيير الإجراء بعد الاستماع", self)
         self.change_after_listening_action.triggered.connect(self.open_after_listening_settings)
 
+        self.change_repeat_limit_action = QAction("تغيير عدد تكرار الآية", self)
+        self.change_repeat_limit_action.triggered.connect(self.open_repeat_limit_settings)
+
+
 
         self.theme_menu = QMenu("تغيير الثيم", self)
         for theme in self.theme_manager.get_themes():
@@ -202,6 +206,7 @@ class MenuBar(QMenuBar):
 
         self.preferences_menu.addAction(self.change_reciter_action)
         self.preferences_menu.addAction(self.change_after_listening_action)
+        self.preferences_menu.addAction(self.change_repeat_limit_action)
         self.preferences_menu.addMenu(self.theme_menu)
         self.preferences_menu.addMenu(self.text_direction_action)
         self.preferences_menu.addAction(self.settings_action)
@@ -446,7 +451,7 @@ class MenuBar(QMenuBar):
         self.go_to_ayah_action: ["Shift+G"],
             self.quick_access_action: ["Ctrl+Q"],
             self.close_action: ["Ctrl+W", "Ctrl+F4"],
-            self.exit_action: ["Ctrl+Shift+W", "Ctrl+Shift+F4"],
+
 
             # Playback controls
             self.play_pause_action: ["K", "Ctrl+P"],
@@ -486,7 +491,7 @@ class MenuBar(QMenuBar):
         self.settings_action: ["Alt+S", "F3"],
         self.change_reciter_action: ["Ctrl+Shift+R"],
         self.change_after_listening_action: ["Ctrl+Shift+U"],
-        
+        self.change_repeat_limit_action: ["Ctrl+Shift+Y"],
 
 
         #Help
@@ -516,3 +521,9 @@ class MenuBar(QMenuBar):
         dialog.open_listening_tab_and_focus_action()
         dialog.exec()
  
+    def open_repeat_limit_settings(self):
+        dialog = SettingsDialog(self.parent)
+        dialog.open_listening_tab_and_focus_repeat_limit()
+        dialog.exec()
+
+
