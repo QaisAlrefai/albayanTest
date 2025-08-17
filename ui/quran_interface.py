@@ -78,6 +78,7 @@ class QuranInterface(QMainWindow):
         self.set_text(Config.general.auto_restore_position_enabled)
         logger.debug(f"restore setting is: {Config.general.auto_restore_position_enabled}")
         self.set_shortcut()
+        self.current_text_repeat = 0
         logger.debug("QuranInterface initialized successfully.")
 
     def center_window(self):
@@ -223,6 +224,7 @@ class QuranInterface(QMainWindow):
         self.quran_view.setText(self.quran_manager.next())
         self.set_text_ctrl_label()
         Globals.effects_manager.play("next")
+        self.current_text_repeat += 0
         logger.debug("Text set successfully.")
         if self.quran_manager.current_position == self.quran_manager.max_position:
             logger.debug("Reached the end of the Quran.")
@@ -233,6 +235,7 @@ class QuranInterface(QMainWindow):
         self.quran_view.setText(self.quran_manager.back())
         self.set_text_ctrl_label()
         Globals.effects_manager.play("previous")
+        self.current_text_repeat += 0
         logger.debug("Text set successfully.")
         if self.quran_manager.current_position == 1:            
             logger.debug("Reached the beginning of the Quran.")
@@ -663,5 +666,28 @@ class QuranInterface(QMainWindow):
 
     def on_last_ayah_reached(self):
         logger.debug("Last Ayah reached signal received in QuranInterface.")
-        self.OnNext()
-        self.toolbar.toggle_play_pause()
+
+        if Config.listening.text_repeat_count > 0:
+            self.current_text_repeat += 1
+            total_repeats = Config.listening.text_repeat_count
+            logger.debug(f"Repeat {self.current_text_repeat}/{Config.listening.text_repeat_count}")
+            if self.current_text_repeat <= total_repeats:
+                self.set_focus_to_ayah(0)
+                self.toolbar.toggle_play_pause()
+                return
+            else:
+                logger.debug("Repeat limit reached, resetting counter.")
+                self.current_text_repeat = 0
+
+        if Config.listening.action_after_text == 1:
+            Globals.effects_manager.play("alert")
+    
+        elif Config.listening.action_after_text == 2:
+            self.set_focus_to_ayah(0)
+            self.toolbar.toggle_play_pause()
+    
+        elif Config.listening.action_after_text == 3:
+            if not self.quran_manager.navigation_mode == NavigationMode.CUSTOM_RANGE:
+                self.OnNext()
+                self.toolbar.toggle_play_pause()
+
