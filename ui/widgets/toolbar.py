@@ -177,6 +177,7 @@ class AudioToolBar(QToolBar):
         self.navigation = NavigationManager(self.parent, self.parent.quran_manager)
         self.audio_thread = AudioPlayerThread(self.player, self.parent)
         self.current_repeat = 0
+        self.last_played_position = (None, None)
         logger.debug("AudioToolBar initialized.")
 
         self.play_pause_button = self.create_button("تشغيلالآية الحالية", self.toggle_play_pause)
@@ -214,15 +215,31 @@ class AudioToolBar(QToolBar):
         if self.player.is_playing():
             self.player.pause()
             logger.debug("Playback paused.")
+            return
         else:
             current_ayah = self.parent.get_current_ayah()
             self.navigation.set_position(current_ayah.sura_number, current_ayah.number_in_surah)
-            logger.debug(f"Setting position to Surah: {current_ayah.number}, Ayah: {current_ayah.sura_number}")
+            logger.debug(f"Setting position to Surah: {current_ayah.sura_number}, Ayah: {current_ayah.number_in_surah}")
+
+
+        if current_ayah.number_in_surah != 0:
+            if self.last_played_position != (current_ayah.sura_number, current_ayah.number_in_surah):
+                self.current_repeat = 0
+                logger.debug("New Ayah detected, resetting current_repeat to 0.")
+            else:
+                logger.debug("Same Ayah as last played, current_repeat not reset.")
+
+
+            self.last_played_position = (current_ayah.sura_number, current_ayah.number_in_surah)
+
             self.play_current_ayah()
             logger.debug("Playback started.")
 
+
+
     def stop_audio(self):
         logger.debug("Stopping audio playback.")
+        self.current_repeat = 0
         self.audio_thread.manually_stopped = True
         self.player.stop()
         self.set_buttons_status()
@@ -250,6 +267,8 @@ class AudioToolBar(QToolBar):
         logger.debug("Playing next Ayah.")
         self.stop_audio()
         if self.navigation.navigate("next"):
+            if self.navigation.current_ayah != 0:
+                self.last_played_position = (self.navigation.current_surah, self.navigation.current_ayah)
             self.play_current_ayah()
             self.change_ayah_focus()
             logger.debug("Next Ayah played.")
@@ -258,9 +277,12 @@ class AudioToolBar(QToolBar):
         logger.debug("Playing previous Ayah.")
         self.stop_audio()
         if self.navigation.navigate("previous"):
+            if self.navigation.current_ayah != 0:
+                self.last_played_position = (self.navigation.current_surah, self.navigation.current_ayah)
             self.play_current_ayah()
             self.change_ayah_focus()
             logger.debug("Previous Ayah played.")
+
 
     def change_ayah_focus(self, manual: bool = False) -> None:
         logger.debug(f"Changing ayah focus...")
@@ -281,7 +303,7 @@ class AudioToolBar(QToolBar):
         if self.navigation.current_ayah == 0:
             logger.debug("Current Ayah is 0, skipping repeat logic.")
         elif repeat_count > 0:
-            if self.current_repeat < repeat_count:
+            if self.current_repeat < repeat_count - 1:
                 self.current_repeat += 1
                 logger.debug(f"Repeating Ayah: repeat {self.current_repeat}/{repeat_count}")
                 self.play_current_ayah()
@@ -289,7 +311,12 @@ class AudioToolBar(QToolBar):
                 
             else:
                 self.current_repeat = 0
-        
+
+        if self.navigation.current_ayah != 0:
+            if self.last_played_position != (self.navigation.current_surah, self.navigation.current_ayah):
+                logger.debug("New Ayah detected after listening, resetting current_repeat to 0.")
+                self.last_played_position = (self.navigation.current_surah, self.navigation.current_ayah)
+
         if action_after_listening == 2 or self.navigation.current_ayah == 0:
             self.navigation.has_basmala = True if self.navigation.current_ayah < 2 else False
             self.OnPlayNext()
