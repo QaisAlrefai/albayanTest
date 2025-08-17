@@ -192,11 +192,29 @@ class SettingsDialog(QDialog):
             display_text = f"{row['name']} - {row['rewaya']} - {row['type']} - ({row['bitrate']} kbps)"
             self.reciters_combo.addItem(display_text, row["id"])
 
-        self.action_label = QLabel("الإجراء بعد الاستماع:")
+        self.action_label = QLabel("الإجراء بعد الاستماع لكل آية:")
         self.action_combo = QComboBox()
         items_with_ids = [("إيقاف", 0), ("تكرار", 1), ("الانتقال إلى الآية التالية", 2)]
         [self.action_combo.addItem(text, id) for text, id in items_with_ids]
         self.action_combo.setAccessibleName(self.action_label.text())
+
+        self.repeat_limit_label = QLabel("عدد مرات تكرار الآية:")
+        self.repeat_limit_spinbox = SpinBox(self)
+        self.repeat_limit_spinbox.setAccessibleName(self.repeat_limit_label.text())        
+        self.repeat_limit_spinbox.setRange(0, 5)
+        self.repeat_limit_spinbox.setSingleStep(1)
+
+        self.action_after_text_label = QLabel("الإجراء بعد نهاية النص:")
+        self.action_after_text_combo = QComboBox()
+        items_after_text = [("إيقاف", 0), ("تنبيه صوتي", 1), ("تكرار النص الحالي", 2), ("الانتقال إلى التالي", 3)]
+        [self.action_after_text_combo.addItem(text, id) for text, id in items_after_text]
+        self.action_after_text_combo.setAccessibleName(self.action_after_text_label.text())
+
+        self.text_repeat_label = QLabel("عدد مرات تكرار النص:")
+        self.text_repeat_spinbox = SpinBox(self)
+        self.text_repeat_spinbox.setAccessibleName(self.text_repeat_label.text())
+        self.text_repeat_spinbox.setRange(0, 5)
+        self.text_repeat_spinbox.setSingleStep(1)
 
         self.duration_label = QLabel("مدة التقديم والترجيع (بالثواني):")
         self.duration_spinbox = SpinBox(self)
@@ -204,11 +222,6 @@ class SettingsDialog(QDialog):
         self.duration_spinbox.setRange(2, 15)
         self.duration_spinbox.setSingleStep(1)
 
-        self.repeat_limit_label = QLabel("عدد مرات تكرار الآية:")
-        self.repeat_limit_spinbox = SpinBox(self)
-        self.repeat_limit_spinbox.setAccessibleName(self.repeat_limit_label.text())        
-        self.repeat_limit_spinbox.setRange(0, 5)
-        self.repeat_limit_spinbox.setSingleStep(1)
 
 
 
@@ -219,10 +232,14 @@ class SettingsDialog(QDialog):
         self.group_listening_layout.addSpacerItem(QSpacerItem(20, 5, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))  # مسافة نتوسطة
         self.group_listening_layout.addWidget(self.action_label)
         self.group_listening_layout.addWidget(self.action_combo)
-        self.group_listening_layout.addWidget(self.duration_label)
-        self.group_listening_layout.addWidget(self.duration_spinbox)
         self.group_listening_layout.addWidget(self.repeat_limit_label)
         self.group_listening_layout.addWidget(self.repeat_limit_spinbox)
+        self.group_listening_layout.addWidget(self.action_after_text_label)
+        self.group_listening_layout.addWidget(self.action_after_text_combo)
+        self.group_listening_layout.addWidget(self.text_repeat_label)
+        self.group_listening_layout.addWidget(self.text_repeat_spinbox)
+        self.group_listening_layout.addWidget(self.duration_label)
+        self.group_listening_layout.addWidget(self.duration_spinbox)
         self.group_listening_layout.addWidget(self.auto_move_focus_checkbox)
         self.group_listening.setLayout(self.group_listening_layout)
         self.group_listening_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
@@ -403,7 +420,9 @@ class SettingsDialog(QDialog):
         Config.listening.reciter = self.reciters_combo.currentData()
         Config.listening.action_after_listening = self.action_combo.currentData()
         Config.listening.forward_time = self.duration_spinbox.value()
-        Config.listening.repeat_count = self.repeat_limit_spinbox.value()
+        Config.listening.ayah_repeat_count = self.repeat_limit_spinbox.value()
+        Config.listening.action_after_text = self.action_after_text_combo.currentData()
+        Config.listening.text_repeat_count = self.text_repeat_spinbox.value()
         Config.listening.auto_move_focus = self.auto_move_focus_checkbox.isChecked()
 
         Config.reading.font_type = self.font_type_combo.currentData().value
@@ -454,7 +473,8 @@ class SettingsDialog(QDialog):
         self.auto_restore_position_checkbox.setChecked(Config.general.auto_restore_position_enabled)
         self.update_checkbox.setChecked(Config.general.check_update_enabled)
         self.duration_spinbox.setValue(Config.listening.forward_time)
-        self.repeat_limit_spinbox.setValue(Config.listening.repeat_count)
+        self.repeat_limit_spinbox.setValue(Config.listening.ayah_repeat_count)
+        self.text_repeat_spinbox.setValue(Config.listening.text_repeat_count)
         self.auto_move_focus_checkbox.setChecked(Config.listening.auto_move_focus)
         self.ignore_tashkeel_checkbox.setChecked(Config.search.ignore_tashkeel)
         self.ignore_hamza_checkbox.setChecked(Config.search.ignore_hamza)
@@ -464,6 +484,7 @@ class SettingsDialog(QDialog):
             (self.log_levels_combo, Config.general.log_level),
             (self.reciters_combo, Config.listening.reciter),
             (self.action_combo, Config.listening.action_after_listening),
+        (self.action_after_text_combo    , Config.listening.action_after_text),
             (self.font_type_combo, QuranFontType.from_int(Config.reading.font_type)),
     (self.marks_type_combo, MarksType.from_int(Config.reading.marks_type)),
             (self.ayah_device_combo, Config.audio.ayah_device),
