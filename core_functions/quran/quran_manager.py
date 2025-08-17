@@ -115,6 +115,7 @@ class QuranManager:
             .order_by(Quran.number)
             .all()
         )
+        self.current_position = pos
         return [self._row_to_ayah(r) for r in rows]
 
     def get_view_content(self, number: int, mode: NavigationMode, label: str, ayahs: List[Ayah]) -> str:
