@@ -665,29 +665,62 @@ class QuranInterface(QMainWindow):
         logger.debug("Random message dialog closed.")
 
     def on_last_ayah_reached(self):
+        """
+        Handle the signal when the last Ayah is reached in the Quran text.
+        Checks if repeats are enabled and executes the action after text.
+        """
         logger.debug("Last Ayah reached signal received in QuranInterface.")
 
-        if Config.listening.text_repeat_count > 0:
+        if self._handle_repeats():
+            return
+        self._handle_action_after_text()
+
+
+
+    def _handle_repeats(self) -> bool:
+        """            Handle the repeat logic for the current Ayah.
+            If repeats are enabled and the repeat limit is not reached, it will repeat the Ayah.
+            Returns True if a repeat was executed, False otherwise.
+            """
+        repeat_limit = Config.listening.text_repeat_count
+        if repeat_limit > 0:
             self.current_text_repeat += 1
-            total_repeats = Config.listening.text_repeat_count
-            logger.debug(f"Repeat {self.current_text_repeat}/{Config.listening.text_repeat_count}")
-            if self.current_text_repeat <= total_repeats:
-                self.set_focus_to_ayah(0)
-                self.toolbar.toggle_play_pause()
-                return
+            logger.debug(f"Repeat {self.current_text_repeat}/{repeat_limit}")
+
+            if self.current_text_repeat < repeat_limit:
+                self._repeat_current_ayah()
+                return True
             else:
                 logger.debug("Repeat limit reached, resetting counter.")
                 self.current_text_repeat = 0
+        return False
 
-        if Config.listening.action_after_text == 1:
-            Globals.effects_manager.play("alert")
-    
-        elif Config.listening.action_after_text == 2:
-            self.set_focus_to_ayah(0)
+    def _handle_action_after_text(self):
+        """            Handle the action to be executed after the text is processed.
+            This will execute the action based on the user's configuration.
+            """
+        actions = {
+        1: lambda: Globals.effects_manager.play("alert"),
+        2: self._repeat_current_ayah,
+        3: self._go_to_next_if_not_custom,
+    }
+
+        action = Config.listening.action_after_text
+        handler = actions.get(action)
+        if handler:
+            handler()
+
+    def _repeat_current_ayah(self):
+        """            Repeat the current Ayah by setting the focus to it and playing it.
+            This will reset the text repeat counter and toggle the play/pause state.
+            """
+        self.set_focus_to_ayah(0)
+        self.toolbar.toggle_play_pause()
+
+    def _go_to_next_if_not_custom(self):
+        """            Go to the next Ayah if the current navigation mode is not CUSTOM_RANGE.
+            This will call the OnNext method and toggle the play/pause state of the toolbar.
+            """
+        if self.quran_manager.navigation_mode != NavigationMode.CUSTOM_RANGE:
+            self.OnNext()
             self.toolbar.toggle_play_pause()
-    
-        elif Config.listening.action_after_text == 3:
-            if not self.quran_manager.navigation_mode == NavigationMode.CUSTOM_RANGE:
-                self.OnNext()
-                self.toolbar.toggle_play_pause()
-
