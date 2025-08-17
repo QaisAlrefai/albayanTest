@@ -185,7 +185,7 @@ class QuranInterface(QMainWindow):
             ayah_number = 1
         else:
             ayah_number = self.preferences_manager.get_int("current_ayah_number", 1)
-            current_position = self.preferences_manager.get_int("current_position")
+            current_position = self.preferences_manager.get_int("current_position", 0)
 
         mode = self.preferences_manager.get_int("navigation_mode", NavigationMode.SURAH.value)
         self.quran_manager.navigation_mode = NavigationMode.from_int(mode)
