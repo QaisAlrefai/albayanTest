@@ -93,7 +93,7 @@ class GoToDialog(QDialog):
 
         QShortcut(QKeySequence("Ctrl+F4"), self).activated.connect(self.reject)
 
-        QShortcut(QKeySequence("Ctrl+I"), self).activated.connect(lambda: UniversalSpeech.say(self.info_label.text()), force=True)
+        QShortcut(QKeySequence("Ctrl+I"), self).activated.connect(lambda: UniversalSpeech.say(self.info_label.text(), force=True))
 
         main_layout.addLayout(button_layout)
         self.setLayout(main_layout)
