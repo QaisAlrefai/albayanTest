@@ -388,7 +388,7 @@ class TasbihEntryDialog(QDialog):
     def handle_entry_updated(self, tasbih_entry: TasbihEntry):
         self.load_details(tasbih_entry)
         logger.debug(f"Tasbih entry updated: {tasbih_entry.name} (ID: {tasbih_entry.id}, New Count: {tasbih_entry.counter})")
-        UniversalSpeech.say(str(tasbih_entry.counter), force=True)
+        UniversalSpeech.say(str(tasbih_entry.counter))
                 
     def handle_increment(self):
         """Handle the increment action."""
