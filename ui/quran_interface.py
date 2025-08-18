@@ -281,6 +281,8 @@ class QuranInterface(QMainWindow):
         self.toolbar.navigation.reset_position()
         self.toolbar.set_buttons_status()
         logger.debug("Buttons status set.")
+        self.current_text_repeat = 0
+
 
     @exception_handler(ui_element=QMessageBox)
     def OnQuickAccess(self, event):
@@ -683,7 +685,7 @@ class QuranInterface(QMainWindow):
             Returns True if a repeat was executed, False otherwise.
             """
         repeat_limit = Config.listening.text_repeat_count
-        if repeat_limit > 0:
+        if repeat_limit > 0 and Config.listening.action_after_text != 1:
             self.current_text_repeat += 1
             logger.debug(f"Repeat {self.current_text_repeat}/{repeat_limit}")
 
@@ -700,8 +702,8 @@ class QuranInterface(QMainWindow):
             This will execute the action based on the user's configuration.
             """
         actions = {
-        1: lambda: Globals.effects_manager.play("alert"),
-        2: self._repeat_current_ayah,
+        1: self._repeat_current_ayah,
+        2: lambda: Globals.effects_manager.play("alert"),
         3: self._go_to_next_if_not_custom,
     }
 
@@ -721,6 +723,6 @@ class QuranInterface(QMainWindow):
         """            Go to the next Ayah if the current navigation mode is not CUSTOM_RANGE.
             This will call the OnNext method and toggle the play/pause state of the toolbar.
             """
-        if self.quran_manager.navigation_mode != NavigationMode.CUSTOM_RANGE:
+        if self.quran_manager.navigation_mode != NavigationMode.CUSTOM_RANGE and self.quran_manager.current_position < self.quran_manager.max_position:
             self.OnNext()
             self.toolbar.toggle_play_pause()
