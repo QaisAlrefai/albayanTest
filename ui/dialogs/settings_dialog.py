@@ -37,7 +37,7 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.parent = parent
         self.setWindowTitle("الإعدادات")
-        self.resize(600, 450)
+        self.resize(650, 550)
         self.reciters_manager = AyahReciter(data_folder / "quran" / "reciters.db")
         self.init_ui()
         self.set_current_settings()
