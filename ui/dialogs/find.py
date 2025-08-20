@@ -290,12 +290,12 @@ class SearchResultsDialog(QDialog):
     def keyPressEvent(self, event: QKeyEvent | None) -> None:
 
         if event.key() == Qt.Key.Key_I and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-            UniversalSpeech.say(self.total_label.text())
+            UniversalSpeech.say(self.total_label.text(), force=True)
             logger.debug("Ctrl+I pressed: Announcing total results count.")
         elif event.key() == Qt.Key.Key_R and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
             current_row = self.list_widget.currentRow()
             text = self.search_result[current_row]["text"]
-            UniversalSpeech.say(text)
+            UniversalSpeech.say(text, force=True)
             logger.debug(f"Ctrl+R pressed: Reading search result at index {current_row}.")
         return super().keyPressEvent(event)
 

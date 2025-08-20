@@ -85,6 +85,7 @@ class SettingsDialog(QDialog):
         self.run_in_background_checkbox = QCheckBox("تشغيل البرنامج في الخلفية")
         self.start_on_system_start_checkbox = QCheckBox("تشغيل عند بدء تشغيل النظام")
         self.auto_save_position_checkbox = QCheckBox("حفظ الموضع الحالي تلقائيًا عند إغلاق البرنامج")
+        self.auto_restore_position_checkbox = QCheckBox("استعادة الموضع الحالي عند فتح البرنامج")
         self.update_checkbox = QCheckBox("التحقق من التحديثات")
         self.log_levels_label = QLabel(self, text="مستوى السجل:")
         self.log_levels_combo = QComboBox(self)
@@ -97,6 +98,7 @@ class SettingsDialog(QDialog):
         self.group_general_layout.addWidget(self.run_in_background_checkbox)
         self.group_general_layout.addWidget(self.start_on_system_start_checkbox)
         self.group_general_layout.addWidget(self.auto_save_position_checkbox)
+        self.group_general_layout.addWidget(self.auto_restore_position_checkbox)
         self.group_general_layout.addWidget(self.update_checkbox)
         self.group_general_layout.addWidget(self.log_levels_label)
         self.group_general_layout.addWidget(self.log_levels_combo)
@@ -190,11 +192,34 @@ class SettingsDialog(QDialog):
             display_text = f"{row['name']} - {row['rewaya']} - {row['type']} - ({row['bitrate']} kbps)"
             self.reciters_combo.addItem(display_text, row["id"])
 
-        self.action_label = QLabel("الإجراء بعد الاستماع:")
+
+
+        self.repeat_limit_label = QLabel("عدد مرات تشغيل وتكرار الآية:")
+        self.repeat_limit_spinbox = SpinBox(self)
+        self.repeat_limit_spinbox.setAccessibleName(self.repeat_limit_label.text())        
+        self.repeat_limit_spinbox.setRange(1, 10)
+        self.repeat_limit_spinbox.setSingleStep(1)
+
+        self.action_label = QLabel("الإجراء بعد الاستماع لكل آية:")
         self.action_combo = QComboBox()
-        items_with_ids = [("إيقاف", 0), ("تكرار", 1), ("الانتقال إلى الآية التالية", 2)]
+        items_with_ids = [("إيقاف", 0), ("تكرار الآية بلا نهاية", 1), ("الانتقال إلى الآية التالية", 2)]
         [self.action_combo.addItem(text, id) for text, id in items_with_ids]
         self.action_combo.setAccessibleName(self.action_label.text())
+
+
+
+        self.text_repeat_label = QLabel("عدد مرات تشغيل وتكرار النص:")
+        self.text_repeat_spinbox = SpinBox(self)
+        self.text_repeat_spinbox.setAccessibleName(self.text_repeat_label.text())
+        self.text_repeat_spinbox.setRange(1, 10)
+        self.text_repeat_spinbox.setSingleStep(1)
+
+
+        self.action_after_text_label = QLabel("الإجراء بعد نهاية النص:")
+        self.action_after_text_combo = QComboBox()
+        items_after_text = [("إيقاف", 0), ("تكرار النص الحالي بلا نهاية", 1), ("تنبيه صوتي", 2), ("الانتقال إلى التالي", 3)]
+        [self.action_after_text_combo.addItem(text, id) for text, id in items_after_text]
+        self.action_after_text_combo.setAccessibleName(self.action_after_text_label.text())
 
         self.duration_label = QLabel("مدة التقديم والترجيع (بالثواني):")
         self.duration_spinbox = SpinBox(self)
@@ -202,18 +227,33 @@ class SettingsDialog(QDialog):
         self.duration_spinbox.setRange(2, 15)
         self.duration_spinbox.setSingleStep(1)
 
+
         self.auto_move_focus_checkbox = QCheckBox("نقل المؤشر تلقائيًا إلى الآية التي يتم تشغيلها")
 
         self.group_listening_layout.addWidget(self.reciters_label)
         self.group_listening_layout.addWidget(self.reciters_combo)
         self.group_listening_layout.addSpacerItem(QSpacerItem(20, 5, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))  # مسافة نتوسطة
+        self.group_listening_layout.addWidget(self.repeat_limit_label)
+        self.group_listening_layout.addWidget(self.repeat_limit_spinbox)
         self.group_listening_layout.addWidget(self.action_label)
         self.group_listening_layout.addWidget(self.action_combo)
+        self.group_listening_layout.addWidget(self.text_repeat_label)
+        self.group_listening_layout.addWidget(self.text_repeat_spinbox)
+        self.group_listening_layout.addWidget(self.action_after_text_label)
+        self.group_listening_layout.addWidget(self.action_after_text_combo)
         self.group_listening_layout.addWidget(self.duration_label)
         self.group_listening_layout.addWidget(self.duration_spinbox)
         self.group_listening_layout.addWidget(self.auto_move_focus_checkbox)
         self.group_listening.setLayout(self.group_listening_layout)
         self.group_listening_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+
+
+        self.repeat_limit_spinbox.valueChanged.connect(self.update_action_combo_label)
+        self.action_combo.currentIndexChanged.connect(self.update_repeat_limit_state)
+        self.text_repeat_spinbox.valueChanged.connect(self.update_action_after_text_combo_label)
+        self.action_after_text_combo.currentIndexChanged.connect(self.update_text_repeat_state)
+
+
 
         self.group_reading = QGroupBox("إعدادات القراءة")
         self.group_reading_layout = QVBoxLayout()
@@ -294,6 +334,42 @@ class SettingsDialog(QDialog):
         main_layout.addLayout(buttons_layout)
         self.setLayout(main_layout)
 
+    def update_repeat_limit_state(self):
+        current_id = self.action_combo.currentData()
+        if current_id == 1:
+            self.repeat_limit_spinbox.setEnabled(False)
+        else:
+            self.repeat_limit_spinbox.setEnabled(True)
+
+
+    def update_text_repeat_state(self):
+        current_id = self.action_after_text_combo.currentData()
+        if current_id == 1:
+            self.text_repeat_spinbox.setEnabled(False)
+        else:
+            self.text_repeat_spinbox.setEnabled(True)
+
+
+    def update_action_combo_label(self, value: int):
+        if value == 0:
+            self.action_combo.setItemText(0, "إيقاف")
+        elif value == 1:
+            self.action_combo.setItemText(0, "تشغيل الآية مرة واحدة ثم إيقاف")
+        elif value == 2:
+            self.action_combo.setItemText(0, "تشغيل الآية مرتين ثم إيقاف")
+        else:
+            self.action_combo.setItemText(0, f"تشغيل {value} مرات ثم إيقاف")
+
+    def update_action_after_text_combo_label(self, value: int):
+        if value == 0:
+            self.action_after_text_combo.setItemText(0, "إيقاف")
+        elif value == 1:
+            self.action_after_text_combo.setItemText(0, "تشغيل مرة واحدة ثم إيقاف")
+        elif value == 2:
+            self.action_after_text_combo.setItemText(0, "تشغيل مرتين ثم إيقاف")
+        else:
+            self.action_after_text_combo.setItemText(0, f"تشغيل {value} مرات ثم إيقاف")
+
 
     def OnSurahVolume(self) -> None:
         volume = self.surah_volume.value()
@@ -372,6 +448,7 @@ class SettingsDialog(QDialog):
         Config.general.run_in_background_enabled = self.run_in_background_checkbox.isChecked()
         Config.general.auto_start_enabled = self.start_on_system_start_checkbox.isChecked()
         Config.general.auto_save_position_enabled = self.auto_save_position_checkbox.isChecked()
+        Config.general.auto_restore_position_enabled = self.auto_restore_position_checkbox.isChecked()
         Config.general.check_update_enabled = self.update_checkbox.isChecked()
         Config.general.log_level = self.log_levels_combo.currentData()
 
@@ -390,6 +467,9 @@ class SettingsDialog(QDialog):
         Config.listening.reciter = self.reciters_combo.currentData()
         Config.listening.action_after_listening = self.action_combo.currentData()
         Config.listening.forward_time = self.duration_spinbox.value()
+        Config.listening.ayah_repeat_count = self.repeat_limit_spinbox.value()
+        Config.listening.action_after_text = self.action_after_text_combo.currentData()
+        Config.listening.text_repeat_count = self.text_repeat_spinbox.value()
         Config.listening.auto_move_focus = self.auto_move_focus_checkbox.isChecked()
 
         Config.reading.font_type = self.font_type_combo.currentData().value
@@ -437,8 +517,11 @@ class SettingsDialog(QDialog):
         self.turn_pages_checkbox.setChecked(Config.reading.auto_page_turn)
         self.start_on_system_start_checkbox.setChecked(Config.general.auto_start_enabled)
         self.auto_save_position_checkbox.setChecked(Config.general.auto_save_position_enabled)
+        self.auto_restore_position_checkbox.setChecked(Config.general.auto_restore_position_enabled)
         self.update_checkbox.setChecked(Config.general.check_update_enabled)
         self.duration_spinbox.setValue(Config.listening.forward_time)
+        self.repeat_limit_spinbox.setValue(Config.listening.ayah_repeat_count)
+        self.text_repeat_spinbox.setValue(Config.listening.text_repeat_count)
         self.auto_move_focus_checkbox.setChecked(Config.listening.auto_move_focus)
         self.ignore_tashkeel_checkbox.setChecked(Config.search.ignore_tashkeel)
         self.ignore_hamza_checkbox.setChecked(Config.search.ignore_hamza)
@@ -448,6 +531,7 @@ class SettingsDialog(QDialog):
             (self.log_levels_combo, Config.general.log_level),
             (self.reciters_combo, Config.listening.reciter),
             (self.action_combo, Config.listening.action_after_listening),
+        (self.action_after_text_combo    , Config.listening.action_after_text),
             (self.font_type_combo, QuranFontType.from_int(Config.reading.font_type)),
     (self.marks_type_combo, MarksType.from_int(Config.reading.marks_type)),
             (self.ayah_device_combo, Config.audio.ayah_device),
@@ -469,6 +553,19 @@ class SettingsDialog(QDialog):
         self.tree_widget.setCurrentItem(self.listening_item)
         self.action_combo.setFocus()
 
+    def open_listening_tab_and_focus_repeat_limit(self):
+        self.tree_widget.setCurrentItem(self.listening_item)    
+        self.repeat_limit_spinbox.setFocus()
+
+
+    def open_listening_tab_and_focus_text_repeat(self):
+        self.tree_widget.setCurrentItem(self.listening_item)
+        self.text_repeat_spinbox.setFocus()
+
+
+    def open_listening_tab_and_focus_action_after_text(self):
+        self.tree_widget.setCurrentItem(self.listening_item)
+        self.action_after_text_combo.setFocus()
 
     def reject(self):
         self.deleteLater()

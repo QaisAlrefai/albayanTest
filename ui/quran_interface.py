@@ -66,6 +66,7 @@ class QuranInterface(QMainWindow):
         Globals.effects_manager = SoundEffectPlayer("Audio/sounds")
 
         self.toolbar = AudioToolBar(self)
+        self.toolbar.navigation.lastAyahReached.connect(self.on_last_ayah_reached)
         self.menu_bar = MenuBar(self)
         self.setMenuBar(self.menu_bar)
         self.addToolBar(self.toolbar)
@@ -73,8 +74,11 @@ class QuranInterface(QMainWindow):
         self.tray_manager = SystemTrayManager(self, program_name, program_icon)
         self.create_widgets()
         self.create_layout()
-        self.set_text()
+        
+        self.set_text(Config.general.auto_restore_position_enabled)
+        logger.debug(f"restore setting is: {Config.general.auto_restore_position_enabled}")
         self.set_shortcut()
+        self.current_text_repeat = 0
         logger.debug("QuranInterface initialized successfully.")
 
     def center_window(self):
@@ -174,10 +178,15 @@ class QuranInterface(QMainWindow):
         self.centralWidget().setLayout(layout)
 
 
-    def set_text(self):
+    def set_text(self, restore: bool = True):
         logger.debug("Loading Quran text...")
-        ayah_number = self.preferences_manager.get_int("current_ayah_number", 1)
-        current_position = self.preferences_manager.get_int("current_position", 1)
+        if not restore:
+            current_position = 1
+            ayah_number = 1
+        else:
+            ayah_number = self.preferences_manager.get_int("current_ayah_number", 1)
+            current_position = self.preferences_manager.get_int("current_position", 0)
+
         mode = self.preferences_manager.get_int("navigation_mode", NavigationMode.SURAH.value)
         self.quran_manager.navigation_mode = NavigationMode.from_int(mode)
         logger.debug(f"Current position: {current_position}, Ayah number: {ayah_number}, Mode: {self.quran_manager.navigation_mode}")
@@ -215,6 +224,7 @@ class QuranInterface(QMainWindow):
         self.quran_view.setText(self.quran_manager.next())
         self.set_text_ctrl_label()
         Globals.effects_manager.play("next")
+        self.current_text_repeat += 0
         logger.debug("Text set successfully.")
         if self.quran_manager.current_position == self.quran_manager.max_position:
             logger.debug("Reached the end of the Quran.")
@@ -225,6 +235,7 @@ class QuranInterface(QMainWindow):
         self.quran_view.setText(self.quran_manager.back())
         self.set_text_ctrl_label()
         Globals.effects_manager.play("previous")
+        self.current_text_repeat += 0
         logger.debug("Text set successfully.")
         if self.quran_manager.current_position == 1:            
             logger.debug("Reached the beginning of the Quran.")
@@ -270,6 +281,8 @@ class QuranInterface(QMainWindow):
         self.toolbar.navigation.reset_position()
         self.toolbar.set_buttons_status()
         logger.debug("Buttons status set.")
+        self.current_text_repeat = 0
+
 
     @exception_handler(ui_element=QMessageBox)
     def OnQuickAccess(self, event):
@@ -503,19 +516,19 @@ class QuranInterface(QMainWindow):
         logger.debug(f"Text to be spoken: {text}")
         if text:
             if self.toolbar.player.is_playing():
-                UniversalSpeech.say(f"{text}، الآية المشغلة.")
+                UniversalSpeech.say(f"{text}، الآية المشغلة.", force=True)
                 logger.debug(f"{text} is currently playing.")
             elif self.toolbar.player.is_paused():
-                UniversalSpeech.say(f"{text}، تم إيقافها مؤقتًا.")
+                UniversalSpeech.say(f"{text}، تم إيقافها مؤقتًا.", force=True)
                 logger.debug(f"{text} is paused.")
             elif self.toolbar.player.is_stopped():
-                UniversalSpeech.say(f"{text}، تم إيقافها.")
+                UniversalSpeech.say(f"{text}، تم إيقافها.", force=True)
                 logger.debug(f"{text} is stopped.")
             elif self.toolbar.player.is_stalled():
-                UniversalSpeech.say(f"{text}، يجري تحميلها.")
+                UniversalSpeech.say(f"{text}، يجري تحميلها.", force=True)
                 logger.debug(f"{text} is stalled.")
         else:
-            UniversalSpeech.say("لم يتم تشغيل أي آية.")
+            UniversalSpeech.say("لم يتم تشغيل أي آية.", force=True)
             logger.debug("No Ayah is currently playing.")
 
     def say_focused_ayah(self):
@@ -523,7 +536,7 @@ class QuranInterface(QMainWindow):
         current_aya = self.get_current_ayah()
         text = f"آية {current_aya.number_in_surah} من {current_aya.sura_name}، الآية الحالية."
         logger.debug(f"Text to be spoken: {text}")
-        UniversalSpeech.say(text)
+        UniversalSpeech.say(text, force=True)
 
     @exception_handler(ui_element=QMessageBox)
     def OnSaveBookmark(self, event):
@@ -652,3 +665,64 @@ class QuranInterface(QMainWindow):
         logger.debug("Random message dialog opened.")
         info_dialog.exec()
         logger.debug("Random message dialog closed.")
+
+    def on_last_ayah_reached(self):
+        """
+        Handle the signal when the last Ayah is reached in the Quran text.
+        Checks if repeats are enabled and executes the action after text.
+        """
+        logger.debug("Last Ayah reached signal received in QuranInterface.")
+
+        if self._handle_repeats():
+            return
+        self._handle_action_after_text()
+
+
+
+    def _handle_repeats(self) -> bool:
+        """            Handle the repeat logic for the current Ayah.
+            If repeats are enabled and the repeat limit is not reached, it will repeat the Ayah.
+            Returns True if a repeat was executed, False otherwise.
+            """
+        repeat_limit = Config.listening.text_repeat_count
+        if repeat_limit > 0 and Config.listening.action_after_text != 1:
+            self.current_text_repeat += 1
+            logger.debug(f"Repeat {self.current_text_repeat}/{repeat_limit}")
+
+            if self.current_text_repeat < repeat_limit:
+                self._repeat_current_ayah()
+                return True
+            else:
+                logger.debug("Repeat limit reached, resetting counter.")
+                self.current_text_repeat = 0
+        return False
+
+    def _handle_action_after_text(self):
+        """            Handle the action to be executed after the text is processed.
+            This will execute the action based on the user's configuration.
+            """
+        actions = {
+        1: self._repeat_current_ayah,
+        2: lambda: Globals.effects_manager.play("alert"),
+        3: self._go_to_next_if_not_custom,
+    }
+
+        action = Config.listening.action_after_text
+        handler = actions.get(action)
+        if handler:
+            handler()
+
+    def _repeat_current_ayah(self):
+        """            Repeat the current Ayah by setting the focus to it and playing it.
+            This will reset the text repeat counter and toggle the play/pause state.
+            """
+        self.set_focus_to_ayah(0)
+        self.toolbar.toggle_play_pause()
+
+    def _go_to_next_if_not_custom(self):
+        """            Go to the next Ayah if the current navigation mode is not CUSTOM_RANGE.
+            This will call the OnNext method and toggle the play/pause state of the toolbar.
+            """
+        if self.quran_manager.navigation_mode != NavigationMode.CUSTOM_RANGE and self.quran_manager.current_position < self.quran_manager.max_position:
+            self.OnNext()
+            self.toolbar.toggle_play_pause()

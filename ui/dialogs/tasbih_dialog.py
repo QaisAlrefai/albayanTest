@@ -151,7 +151,7 @@ class TasbihDialog(QDialog):
         tasbih_entry = self.controller.get_entry(entry_id)
         logger.info(f"Opening Tasbih entry dialog for: {tasbih_entry.name} (ID: {entry_id}, Count: {tasbih_entry.counter})")
         dialog = TasbihEntryDialog(self, self.controller, tasbih_entry)
-        UniversalSpeech.say(F"مرحبا بك في المِسْبَحَة، التسبيح: {tasbih_entry.name}، العدد: {tasbih_entry.counter}. استخدم المفاتيح التالية لزيادة العداد: Space, Enter, +,أو C. لإنقاص العداد استخدم: D, Ctrl+Space, -, أو Backspace. لإعادة تعيين العداد استخدم: Ctrl+R. للمعلومات استخدم: V للعدد، T للذِكر، I للكل.")
+        UniversalSpeech.say(F"مرحبا بك في المِسْبَحَة، التسبيح: {tasbih_entry.name}، العدد: {tasbih_entry.counter}. استخدم المفاتيح التالية لزيادة العداد: Space, Enter, +,أو C. لإنقاص العداد استخدم: D, Ctrl+Space, -, أو Backspace. لإعادة تعيين العداد استخدم: Ctrl+R. للمعلومات استخدم: V للعدد، T للذِكر، I للكل.", force=True)
         dialog.exec()
 
     def OnItemSelectionChanged(self):    
@@ -418,11 +418,11 @@ class TasbihEntryDialog(QDialog):
 
         #Info shortcuts
         counter_info_shortcut = QShortcut(QKeySequence("V"), self)
-        counter_info_shortcut.activated.connect(lambda: UniversalSpeech.say(str(self.counter_label.text())))
+        counter_info_shortcut.activated.connect(lambda: UniversalSpeech.say(str(self.counter_label.text()), force=True))
         name_info_shortcut = QShortcut(QKeySequence("T"), self)
-        name_info_shortcut.activated.connect(lambda: UniversalSpeech.say(str(self.name_label.text())))
+        name_info_shortcut.activated.connect(lambda: UniversalSpeech.say(str(self.name_label.text()), force=True))
         all_info_shortcut = QShortcut(QKeySequence("I"), self)
-        all_info_shortcut.activated.connect(lambda: UniversalSpeech.say(f"{self.name_label.text()}، {self.counter_label.text()}"))
+        all_info_shortcut.activated.connect(lambda: UniversalSpeech.say(f"{self.name_label.text()}، {self.counter_label.text()}", force=True))
 
         for widget, key_sequence in shortcuts.items():
             key_sequence = [key_sequence] if isinstance(key_sequence, str) else key_sequence
