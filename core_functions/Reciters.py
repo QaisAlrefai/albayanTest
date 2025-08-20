@@ -49,7 +49,7 @@ class RecitersManager(ABC):
             return result
             return cursor.fetchall()
 
-    def get_reciter(self, id: int) -> sqlite3.Row:
+    def get_reciter(self, id: int) -> dict:
         """Fetches a specific reciter by ID."""
         logger.debug(f"Fetching reciter with ID: {id}")
         with self._connect() as conn:
@@ -59,9 +59,10 @@ class RecitersManager(ABC):
             result = cursor.fetchone()
             if result:
                 logger.debug(f"Fetched reciter: {result['name']} (ID: {id})")
+                return dict(result)
             else:
                 logger.warning(f"No reciter found with ID: {id}")
-            return result
+                return {}
 
     @lru_cache(maxsize=1)
     def _get_base_url(self, reciter_id: int) -> Optional[str]:
@@ -87,6 +88,12 @@ class RecitersManager(ABC):
 class SurahReciter(RecitersManager):
     def __init__(self, db_path: str, table_name: str ="moshaf"):
         super().__init__(db_path, table_name)
+
+    def get_reciter(self, id: int) -> dict:
+        reciter_data = super().get_reciter(id)
+        if reciter_data:
+            reciter_data["available_suras"] = sorted(map(int, reciter_data["available_suras"].split(",")))
+        return reciter_data
 
     def get_url(self, reciter_id: int, surah_number: int) -> Optional[str]:
         """Fetches the URL for a specific reciter and surah number."""

@@ -258,7 +258,7 @@ class SuraPlayerWindow(QMainWindow):
             logger.warning(f"Reciter {reciter_id} has no available Surahs.")
             return
 
-        available_suras = sorted(map(int, reciter_data["available_suras"].split(",")))
+        available_suras = reciter_data.get("available_suras", [])
         self.surah_combo.clear()
 
         sura_items = [
