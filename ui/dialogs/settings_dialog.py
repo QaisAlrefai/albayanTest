@@ -334,6 +334,9 @@ class SettingsDialog(QDialog):
         main_layout.addLayout(buttons_layout)
         self.setLayout(main_layout)
 
+        self.update_action_combo_label(self.repeat_limit_spinbox.value())
+        self.update_action_after_text_combo_label(self.text_repeat_spinbox.value())
+
     def update_repeat_limit_state(self):
         current_id = self.action_combo.currentData()
         if current_id == 1:
@@ -351,25 +354,20 @@ class SettingsDialog(QDialog):
 
 
     def update_action_combo_label(self, value: int):
-        if value == 0:
-            self.action_combo.setItemText(0, "إيقاف")
-        elif value == 1:
-            self.action_combo.setItemText(0, "تشغيل الآية مرة واحدة ثم إيقاف")
-        elif value == 2:
-            self.action_combo.setItemText(0, "تشغيل الآية مرتين ثم إيقاف")
-        else:
-            self.action_combo.setItemText(0, f"تشغيل {value} مرات ثم إيقاف")
+        forms = {
+            1: "مرة واحدة",
+            2: "مرتين"
+        }
+        text = forms.get(value, f"{value} مرات")
+        self.action_combo.setItemText(0, f"تشغيل الآية {text} ثم إيقاف")
 
     def update_action_after_text_combo_label(self, value: int):
-        if value == 0:
-            self.action_after_text_combo.setItemText(0, "إيقاف")
-        elif value == 1:
-            self.action_after_text_combo.setItemText(0, "تشغيل مرة واحدة ثم إيقاف")
-        elif value == 2:
-            self.action_after_text_combo.setItemText(0, "تشغيل مرتين ثم إيقاف")
-        else:
-            self.action_after_text_combo.setItemText(0, f"تشغيل {value} مرات ثم إيقاف")
-
+        forms = {
+            1: "مرة واحدة",
+            2: "مرتين"
+        }
+        text = forms.get(value, f"{value} مرات")
+        self.action_after_text_combo.setItemText(0, f"تشغيل {text} ثم إيقاف")
 
     def OnSurahVolume(self) -> None:
         volume = self.surah_volume.value()
