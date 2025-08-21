@@ -6,6 +6,7 @@ from ui.dialogs.settings_dialog import SettingsDialog
 from ui.dialogs.bookmark_dialog import BookmarkDialog
 from ui.dialogs.go_to import GoToDialog, GoToStyle
 from ui.dialogs.athkar_dialog import AthkarDialog
+from ui.dialogs.download_dialog import MainDialog as DownloadDialog
 from ui.sura_player_ui import SuraPlayerWindow
 from ui.dialogs.tasbih_dialog import TasbihDialog
 from core_functions.quran.types import NavigationMode
@@ -165,11 +166,13 @@ class MenuBar(QMenuBar):
         self.sura_player_action.triggered.connect(self.OnSuraPlayer)
         self.tasbih_action = QAction("المسبحة", self)
         self.tasbih_action.triggered.connect(self.OnTasbihAction)
+        self.download_manager_action = QAction("مدير التنزيلات", self)
+        self.download_manager_action.triggered.connect(self.open_download_manager)
         self.message_for_you_action = QAction("رسالة لك", self)
         self.message_for_you_action.triggered.connect(self.parent.OnRandomMessages)
 
 
-        self.tools_menu.addActions([self.sura_player_action, self.athkar_action, self.bookmark_manager_action, self.tasbih_action, self.message_for_you_action])
+        self.tools_menu.addActions([self.sura_player_action, self.athkar_action, self.bookmark_manager_action, self.tasbih_action, self.message_for_you_action, self.download_manager_action])
 
 
         self.preferences_menu = self.addMenu("التفضيلات(&R)")
@@ -273,6 +276,12 @@ class MenuBar(QMenuBar):
         logger.debug("Sura Player window activated.")
         self.parent.hide()
         logger.debug("Main window hidden.")
+
+    def open_download_manager(self):
+        logger.debug("Opening Download Manager dialog.")
+        download_dialog = DownloadDialog(self.parent)
+        download_dialog.open()
+        logger.debug("Download Manager dialog opened.")
 
     def OnTasbihAction(self):
         logger.debug("Opening Tasbih dialog.")
@@ -490,6 +499,7 @@ class MenuBar(QMenuBar):
         self.athkar_action: ["Shift+A"],
         self.bookmark_manager_action: ["Shift+D"],
         self.tasbih_action: ["Shift+S"],
+        self.download_manager_action: ["Ctrl+J"],
         self.message_for_you_action: ["Shift+M"],
 
 

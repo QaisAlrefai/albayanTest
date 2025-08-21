@@ -91,9 +91,9 @@ class DownloadSurahsDialog(QDialog):
 
 
 class MainDialog(QDialog):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("إدارة التنزيلات")
+    def __init__(self, parent=None):  # أضف parent كخيار
+        super().__init__(parent)
+        self.parent = parent
         self.setAccessibleName("نافذة إدارة التنزيلات")
 
         layout = QVBoxLayout()
