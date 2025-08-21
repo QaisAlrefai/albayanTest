@@ -39,6 +39,7 @@ class SuraPlayerWindow(QMainWindow):
         self.reciters = SurahReciter(data_folder / "quran" / "reciters.db")
         self.player = SurahPlayer()
         self.audio_player_thread = AudioPlayerThread(self.player, self)
+        self.audio_player_thread.playback_finished.connect(self.handle_surah_end)
         self.filter_manager = FilterManager()
         self.key_handler = KeyHandler(self)
         self.audio_looper = AudioLooper(self, self.player)
@@ -518,3 +519,20 @@ class SuraPlayerWindow(QMainWindow):
     def closeEvent(self, a0):
         self.OnClose()
         logger.info("OnClose method completed.")    
+
+
+    def handle_surah_end(self):
+        """Handle what to do when a Surah finishes playing based on SurahPlayerSettings."""
+        logger.debug("Surah finished playing. Checking SurahPlayerSettings for next action.")
+        action = Config.surah_player.action_after_surah
+        if action == 1:
+            logger.debug("Replaying the current Surah as per settings.")
+            self.replay()
+        elif action == 2:
+            current_index = self.surah_combo.currentIndex()
+            last_index = self.surah_combo.count() - 1
+            if current_index < last_index:
+                logger.debug("Moving to the next Surah as per settings.")
+                self.next_surah()
+        else:
+            logger.debug("No action defined after Surah ends. Stopping playback.")
