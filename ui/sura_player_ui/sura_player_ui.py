@@ -39,7 +39,6 @@ class SuraPlayerWindow(QMainWindow):
         self.reciters = SurahReciter(data_folder / "quran" / "reciters.db")
         self.player = SurahPlayer()
         self.audio_player_thread = AudioPlayerThread(self.player, self)
-        self.audio_player_thread.playback_finished.connect(self.handle_surah_end)
         self.filter_manager = FilterManager()
         self.key_handler = KeyHandler(self)
         self.audio_looper = AudioLooper(self, self.player)
@@ -196,6 +195,7 @@ class SuraPlayerWindow(QMainWindow):
         self.audio_player_thread.waiting_to_load.connect(self.update_buttons_status)
         self.audio_player_thread.statusChanged.connect(self.update_ui_status)
         self.audio_player_thread.file_changed.connect(self.audio_looper.clear_loop)
+        self.audio_player_thread.playback_finished.connect(self.handle_surah_end)
 
         self.filter_manager.filterModeChanged.connect(self.OnFilterModeChange)
         self.filter_manager.activeCategoryChanged.connect(self.OnActiveCategoryChanged)
@@ -307,6 +307,7 @@ class SuraPlayerWindow(QMainWindow):
         logger.debug("Stopping playback.")
         self.set_position(0)
         self.player.stop()
+        self.audio_player_thread.manually_stopped = True
         self.audio_looper.clear_loop()
         logger.info("Playback stopped.")
 
