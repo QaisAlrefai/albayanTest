@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass, asdict
 from abc import ABC
 from typing import Any, Dict, Tuple, ClassVar
-from utils.const import CONFIG_PATH
+from utils.const import CONFIG_PATH, albayan_documents_dir
 from utils.logger import LoggerManager
 
 logger = LoggerManager.get_logger(__name__)
@@ -76,12 +76,23 @@ class SearchSettings(BaseSection):
     ignore_hamza: bool = True
     match_whole_word: bool = False
 
+
 @dataclass
 class ReadingSettings(BaseSection):
     SECTION_NAME: ClassVar[str] = "reading"
     font_type: int = 0
     auto_page_turn: bool = False
     marks_type: int = 0
+
+@dataclass
+class SurahPlayerSettings(BaseSection):
+    SECTION_NAME: ClassVar[str] = "surah_player"
+    action_after_surah: int = 0
+
+@dataclass
+class DownloadingSettings(BaseSection):
+    SECTION_NAME: ClassVar[str] = "downloading"
+    download_path: str = os.path.join(albayan_documents_dir, "Downloads")
 
 @dataclass
 class PreferencesSettings(BaseSection):
@@ -101,6 +112,8 @@ class Config:
     listening: ListeningSettings = ListeningSettings()
     search: SearchSettings = SearchSettings()
     reading: ReadingSettings = ReadingSettings()
+    surah_player: SurahPlayerSettings = SurahPlayerSettings()
+    downloading: DownloadingSettings = DownloadingSettings()
     preferences: PreferencesSettings = PreferencesSettings()
 
     @classmethod

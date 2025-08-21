@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import (
     QDialog,
+    QFileDialog,
     QVBoxLayout,
     QComboBox,
     QRadioButton,
@@ -15,7 +16,7 @@ from PyQt6.QtWidgets import (
     QSpacerItem,
     QSizePolicy,
     QHBoxLayout,
-    QSpinBox,
+    QLineEdit,
     QStackedWidget
 )
 from PyQt6.QtGui import QKeySequence, QShortcut
@@ -66,6 +67,13 @@ class SettingsDialog(QDialog):
         reading_item = QTreeWidgetItem(["القراءة"])
         reading_item.setIcon(0, qta.icon("fa.book"))
 
+        surah_player_item = QTreeWidgetItem(["مشغل السور"])
+        surah_player_item.setIcon(0, qta.icon("fa.play"))
+
+        downloading_item = QTreeWidgetItem(["التنزيل"])
+        downloading_item.setIcon(0, qta.icon("fa.download"))
+ 
+
         search_item = QTreeWidgetItem(["البحث"])
         search_item.setIcon(0, qta.icon("fa.search"))
         
@@ -74,6 +82,8 @@ class SettingsDialog(QDialog):
         self.tree_widget.addTopLevelItem(audio_item)
         self.tree_widget.addTopLevelItem(self.listening_item)
         self.tree_widget.addTopLevelItem(reading_item)
+        self.tree_widget.addTopLevelItem(surah_player_item)
+        self.tree_widget.addTopLevelItem(downloading_item)
         self.tree_widget.addTopLevelItem(search_item)
         
         # Stacked widget to switch views
@@ -280,6 +290,40 @@ class SettingsDialog(QDialog):
         self.group_reading_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
         self.group_reading.setLayout(self.group_reading_layout)
 
+        self.group_surah_player = QGroupBox("إعدادات مشغل السور")
+        self.group_surah_player_layout = QVBoxLayout()
+
+        self.action_after_surah_label = QLabel("الإجراء بعد نهاية السورة:")
+        self.action_after_surah_combo = QComboBox()
+        items_surah = [("إيقاف", 0), ("تكرار السورة", 1), ("الانتقال إلى السورة التالية", 2)]
+        [self.action_after_surah_combo.addItem(text, id) for text, id in items_surah]
+        self.action_after_surah_combo.setAccessibleName(self.action_after_surah_label.text())
+
+        self.group_surah_player_layout.addWidget(self.action_after_surah_label)
+        self.group_surah_player_layout.addWidget(self.action_after_surah_combo)
+        self.group_surah_player_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        self.group_surah_player.setLayout(self.group_surah_player_layout)
+
+        self.group_downloading = QGroupBox("إعدادات التنزيل")
+        self.group_downloading_layout = QVBoxLayout()
+
+        self.download_path_label = QLabel("مسار التنزيل الحالي:")
+        self.download_path_edit = QLineEdit()
+        self.download_path_edit.setReadOnly(True)
+        self.download_path_edit.setText(Config.downloading.download_path)
+        self.download_path_edit.setAccessibleName(self.download_path_label.text())
+
+
+        self.change_download_path_button = QPushButton("تغيير المسار")
+
+        self.group_downloading_layout.addWidget(self.download_path_label)
+        self.group_downloading_layout.addWidget(self.download_path_edit)
+        self.group_downloading_layout.addWidget(self.change_download_path_button)
+        self.group_downloading_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        self.group_downloading.setLayout(self.group_downloading_layout)
+
+        self.change_download_path_button.clicked.connect(self.change_download_path)
+
         self.group_search = QGroupBox("إعدادات البحث")
         self.group_search_layout = QVBoxLayout()
         self.ignore_tashkeel_checkbox = QCheckBox("تجاهل التشكيل")
@@ -298,6 +342,8 @@ class SettingsDialog(QDialog):
         self.stacked_widget.addWidget(self.group_audio)
         self.stacked_widget.addWidget(self.group_listening)
         self.stacked_widget.addWidget(self.group_reading)
+        self.stacked_widget.addWidget(self.group_surah_player)
+        self.stacked_widget.addWidget(self.group_downloading)
         self.stacked_widget.addWidget(self.group_search)
         
 #        self.tree_widget.currentItemChanged.connect(lambda current, previous: self.stacked_widget.setCurrentIndex(self.tree_widget.indexOfTopLevelItem(current)))
@@ -368,6 +414,14 @@ class SettingsDialog(QDialog):
         }
         text = forms.get(value, f"{value} مرات")
         self.action_after_text_combo.setItemText(0, f"تشغيل {text} ثم إيقاف")
+
+    def change_download_path(self):
+        logger.debug("Changing download path.")
+        new_path = QFileDialog.getExistingDirectory(self, "اختر مجلد التنزيل", "")
+        if new_path:
+            self.download_path_edit.setText(new_path)
+            logger.debug(f"Download path changed to: {new_path}")
+ 
 
     def OnSurahVolume(self) -> None:
         volume = self.surah_volume.value()
@@ -474,6 +528,10 @@ class SettingsDialog(QDialog):
         Config.reading.auto_page_turn = self.turn_pages_checkbox.isChecked()
         Config.reading.marks_type = self.marks_type_combo.currentData().value
 
+        Config.surah_player.action_after_surah = self.action_after_surah_combo.currentData()
+
+        Config.downloading.download_path = self.download_path_edit.text()
+
         Config.search.ignore_tashkeel = self.ignore_tashkeel_checkbox.isChecked()
         Config.search.ignore_hamza = self.ignore_hamza_checkbox.isChecked()
         Config.search.match_whole_word = self.match_whole_word_checkbox.isChecked()
@@ -521,6 +579,7 @@ class SettingsDialog(QDialog):
         self.repeat_limit_spinbox.setValue(Config.listening.ayah_repeat_count)
         self.text_repeat_spinbox.setValue(Config.listening.text_repeat_count)
         self.auto_move_focus_checkbox.setChecked(Config.listening.auto_move_focus)
+        self.download_path_edit.setText(Config.downloading.download_path)
         self.ignore_tashkeel_checkbox.setChecked(Config.search.ignore_tashkeel)
         self.ignore_hamza_checkbox.setChecked(Config.search.ignore_hamza)
         self.match_whole_word_checkbox.setChecked(Config.search.match_whole_word)
@@ -532,6 +591,7 @@ class SettingsDialog(QDialog):
         (self.action_after_text_combo    , Config.listening.action_after_text),
             (self.font_type_combo, QuranFontType.from_int(Config.reading.font_type)),
     (self.marks_type_combo, MarksType.from_int(Config.reading.marks_type)),
+    (self.action_after_surah_combo, Config.surah_player.action_after_surah),
             (self.ayah_device_combo, Config.audio.ayah_device),
             (self.surah_device_combo, Config.audio.surah_device),
             (        self.volume_device_combo, Config.audio.volume_device),
