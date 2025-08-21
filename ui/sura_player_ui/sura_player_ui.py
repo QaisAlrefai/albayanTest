@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
 )
 from core_functions.Reciters import SurahReciter
 from .FilterManager import Item, FilterManager
-from ui.widgets.toolbar import AudioPlayerThread
+from utils.audio_player.audio_player_thread import AudioPlayerThread
 from utils.const import Globals, data_folder, user_db_path, program_name
 from utils.audio_player import SurahPlayer
 from utils.universal_speech import UniversalSpeech
