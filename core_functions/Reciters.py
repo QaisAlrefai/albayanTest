@@ -28,7 +28,7 @@ class RecitersManager(ABC):
         logger.debug(f"Database connection established successfully to {self.db_path} in {self.__class__.__name__}")
         return conn
 
-    def get_reciters(self) -> List[sqlite3.Row]:
+    def get_reciters(self) -> List[dict]:
         """Fetches all reciters from the database."""
         logger.debug(f"Fetching all reciters from table: {self.table_name}")
         with self._connect() as conn:
@@ -39,7 +39,8 @@ class RecitersManager(ABC):
                         WHEN bitrate < 64 THEN 'Low'
                         WHEN bitrate BETWEEN 64 AND 128 THEN 'Medium'
                         ELSE 'High'
-                    END AS quality
+                    END AS quality,
+                                    name || ' - ' || rewaya || ' - (' || type || ') - (' || bitrate || ' kbps)' AS display_text
                 FROM {self.table_name}
                 ORDER BY name, bitrate;
             """
@@ -47,8 +48,7 @@ class RecitersManager(ABC):
             result = cursor.fetchall()
             logger.info(f"Fetched {len(result)} reciters from the database.")
             return result
-            return cursor.fetchall()
-
+ 
     def get_reciter(self, id: int) -> dict:
         """Fetches a specific reciter by ID."""
         logger.debug(f"Fetching reciter with ID: {id}")

@@ -1,96 +1,19 @@
 from PyQt6.QtWidgets import (
-    QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLineEdit,
-    QComboBox, QListWidget, QPushButton, QMenu, QLabel, QGridLayout
+    QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton, QLabel, QGridLayout
 )
 from PyQt6.QtCore import Qt
-import sys
+from typing import List
+from enum import Enum
+from core_functions.quran.types import Surah
+from core_functions.Reciters import RecitersManager, AyahReciter, SurahReciter
 
 
-class DownloadVersesDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("تنزيل آيات")
-        self.setAccessibleName("نافذة تنزيل آيات")
+class DownloadMode(Enum):
+    SURAH = "surah"
+    AYAH = "ayah"
 
-        layout = QVBoxLayout()
-        grid = QGridLayout()
-
-        self.reader_combo = QComboBox()
-        self.reader_combo.addItems(["القارئ 1", "القارئ 2"])
-        grid.addWidget(QLabel("القارئ:"), 0, 0)
-        grid.addWidget(self.reader_combo, 0, 1)
-
-        self.from_surah_combo = QComboBox()
-        self.from_surah_combo.addItems(["الفاتحة", "البقرة", "آل عمران"])
-        grid.addWidget(QLabel("من السورة:"), 1, 0)
-        grid.addWidget(self.from_surah_combo, 1, 1)
-
-        self.from_ayah_combo = QComboBox()
-        self.from_ayah_combo.addItems([str(i) for i in range(1, 21)])
-        grid.addWidget(QLabel("من الآية:"), 2, 0)
-        grid.addWidget(self.from_ayah_combo, 2, 1)
-
-        self.to_surah_combo = QComboBox()
-        self.to_surah_combo.addItems(["الفاتحة", "البقرة", "آل عمران"])
-        grid.addWidget(QLabel("إلى السورة:"), 3, 0)
-        grid.addWidget(self.to_surah_combo, 3, 1)
-
-        self.to_ayah_combo = QComboBox()
-        self.to_ayah_combo.addItems([str(i) for i in range(1, 21)])
-        grid.addWidget(QLabel("إلى الآية:"), 4, 0)
-        grid.addWidget(self.to_ayah_combo, 4, 1)
-
-        layout.addLayout(grid)
-
-        btn_layout = QHBoxLayout()
-        btn_download = QPushButton("تنزيل")
-        btn_close = QPushButton("إغلاق")
-        btn_close.clicked.connect(self.close)
-        btn_layout.addWidget(btn_download)
-        btn_layout.addWidget(btn_close)
-
-        layout.addLayout(btn_layout)
-        self.setLayout(layout)
-
-
-class DownloadSurahsDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("تنزيل سور")
-        self.setAccessibleName("نافذة تنزيل سور")
-
-        layout = QVBoxLayout()
-        grid = QGridLayout()
-
-        self.reader_combo = QComboBox()
-        self.reader_combo.addItems(["القارئ 1", "القارئ 2"])
-        grid.addWidget(QLabel("القارئ:"), 0, 0)
-        grid.addWidget(self.reader_combo, 0, 1)
-
-        self.from_surah_combo = QComboBox()
-        self.from_surah_combo.addItems(["الفاتحة", "البقرة", "آل عمران"])
-        grid.addWidget(QLabel("من السورة:"), 1, 0)
-        grid.addWidget(self.from_surah_combo, 1, 1)
-
-        self.to_surah_combo = QComboBox()
-        self.to_surah_combo.addItems(["الفاتحة", "البقرة", "آل عمران"])
-        grid.addWidget(QLabel("إلى السورة:"), 2, 0)
-        grid.addWidget(self.to_surah_combo, 2, 1)
-
-        layout.addLayout(grid)
-
-        btn_layout = QHBoxLayout()
-        btn_download = QPushButton("تنزيل")
-        btn_close = QPushButton("إغلاق")
-        btn_close.clicked.connect(self.close)
-        btn_layout.addWidget(btn_download)
-        btn_layout.addWidget(btn_close)
-
-        layout.addLayout(btn_layout)
-        self.setLayout(layout)
-
-
-class MainDialog(QDialog):
+ 
+class DownloadManagerDialog(QDialog):
     def __init__(self, parent=None):  # أضف parent كخيار
         super().__init__(parent)
         self.parent = parent
@@ -188,11 +111,137 @@ class MainDialog(QDialog):
         dlg = DownloadVersesDialog(self)
         dlg.exec()
 
+class NewDownloadDialog(QDialog):
+    """Dialog for downloading Surahs or Ayahs."""
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    app.setLayoutDirection(Qt.LayoutDirection.RightToLeft)  # دعم الاتجاه العربي
-    dlg = MainDialog()
-    dlg.resize(500, 400)
-    dlg.show()
-    sys.exit(app.exec())
+    def __init__(self, parent, mode: DownloadMode, surahs: List[Surah], reciters_manager: RecitersManager):
+        super().__init__(parent)
+        self.mode = mode
+        self.surahs = surahs
+        self.reciters_manager = reciters_manager
+
+        # Window settings
+        self.setWindowTitle("تحميل سور" if mode == DownloadMode.SURAH else "تحميل آيات")
+        self.setAccessibleName("نافذة التحميل")
+
+        layout = QVBoxLayout()
+        grid = QGridLayout()
+
+        # Reciter selection
+        self.reciter_label = QLabel("القارئ:")
+        self.reciter_combo = QComboBox()
+        self.reciter_combo.setAccessibleName(self.reciter_label.text())
+        for reciter in self.reciters_manager.get_reciters():
+            self.reciter_combo.addItem(reciter["display_text"], reciter["id"])
+
+        grid.addWidget(self.reciter_label, 0, 0)
+        grid.addWidget(self.reciter_combo, 0, 1)
+
+        # From Surah
+        self.from_surah_label = QLabel("من سورة:")
+        self.from_surah_combo = QComboBox()
+        self.from_surah_combo.setAccessibleName(self.from_surah_label.text())
+        grid.addWidget(self.from_surah_label, 1, 0)
+        grid.addWidget(self.from_surah_combo, 1, 1)
+
+        row = 2
+
+        # From Ayah (only in Ayah mode)
+        if self.mode == DownloadMode.AYAH:
+            self.from_ayah_label = QLabel("من آية:")
+            self.from_ayah_combo = QComboBox()
+            self.from_ayah_combo.setAccessibleName(self.from_ayah_label.text())
+
+            grid.addWidget(self.from_ayah_label, row, 0)
+            grid.addWidget(self.from_ayah_combo, row, 1)
+            row += 1
+
+            self.from_surah_combo.currentIndexChanged.connect(
+                lambda _: self._populate_ayahs(self.from_surah_combo, self.from_ayah_combo)
+            )
+
+        # To Surah
+        self.to_surah_label = QLabel("إلى سورة:")
+        self.to_surah_combo = QComboBox()
+        self.to_surah_combo.setAccessibleName(self.to_surah_label.text())
+        grid.addWidget(self.to_surah_label, row, 0)
+        grid.addWidget(self.to_surah_combo, row, 1)
+        row += 1
+
+        # To Ayah (only in Ayah mode)
+        if self.mode == DownloadMode.AYAH:
+            self.to_ayah_label = QLabel("إلى آية:")
+            self.to_ayah_combo = QComboBox()
+            self.to_ayah_combo.setAccessibleName(self.to_ayah_label.text())
+
+            grid.addWidget(self.to_ayah_label, row, 0)
+            grid.addWidget(self.to_ayah_combo, row, 1)
+            row += 1
+
+            self.to_surah_combo.currentIndexChanged.connect(
+                lambda _: self._populate_ayahs(self.to_surah_combo, self.to_ayah_combo)
+            )
+
+        layout.addLayout(grid)
+
+        # Control buttons
+        btn_layout = QHBoxLayout()
+        btn_download = QPushButton("تحميل")
+        btn_close = QPushButton("إغلاق")
+        btn_close.clicked.connect(self.close)
+
+        btn_layout.addWidget(btn_download)
+        btn_layout.addWidget(btn_close)
+        layout.addLayout(btn_layout)
+
+        self.setLayout(layout)
+
+        # Initial population
+        self.reciter_combo.currentIndexChanged.connect(self._on_reciter_changed)
+        self._on_reciter_changed()
+
+    def _on_reciter_changed(self):
+        """Update Surah and Ayah combos when reciter changes."""
+        reciter = self.reciter_combo.currentData()
+        if not reciter:
+            return
+        
+        if self.mode == DownloadMode.SURAH:
+            self._populate_surahs(reciter, self.from_surah_combo)
+            self._populate_surahs(reciter, self.to_surah_combo)
+        elif self.mode == DownloadMode.AYAH:
+            self._populate_ayahs(self.from_surah_combo, self.from_ayah_combo)
+            self._populate_ayahs(self.to_surah_combo, self.to_ayah_combo)
+
+    def _populate_surahs(self, reciter, combo: QComboBox):
+        """Fill Surah combo with only available Surahs for the selected reciter."""
+        combo.clear()
+        available = set(reciter["available_surahs"])
+        for sura in self.surahs:
+            if sura.number in available:
+                combo.addItem(sura.name, sura)
+
+    def _populate_ayahs(self, surah_combo: QComboBox, ayah_combo: QComboBox):
+        """Fill Ayah combo based on selected Surah."""
+        sura: Surah = surah_combo.currentData()
+        if not sura:
+            return
+
+        ayah_combo.clear()
+        for i in range(sura.ayah_count):
+            ayah_number = sura.first_ayah_number + i
+            ayah_combo.addItem(str(i + 1), ayah_number)
+
+    def get_selection(self) -> dict:
+        """Return user selections as a dictionary."""
+        data = {
+            "reciter": self.reciter_combo.currentData(),
+            "from_surah": self.from_surah_combo.currentData(),
+            "to_surah": self.to_surah_combo.currentData(),
+        }
+
+        if self.mode == DownloadMode.AYAH:
+            data["from_ayah"] = self.from_ayah_combo.currentData()
+            data["to_ayah"] = self.to_ayah_combo.currentData()
+
+        return data
