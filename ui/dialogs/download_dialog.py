@@ -233,15 +233,30 @@ class NewDownloadDialog(QDialog):
             ayah_combo.addItem(str(i + 1), ayah_number)
 
     def get_selection(self) -> dict:
-        """Return user selections as a dictionary."""
+        """Return user selections as a dictionary with auto-correction."""
+        reciter = self.reciter_combo.currentData()
+        from_surah: Surah = self.from_surah_combo.currentData()
+        to_surah: Surah = self.to_surah_combo.currentData()
+
+        # Auto-correct surah range
+        if from_surah.number > to_surah.number:
+            to_surah = from_surah
+
         data = {
-            "reciter": self.reciter_combo.currentData(),
-            "from_surah": self.from_surah_combo.currentData(),
-            "to_surah": self.to_surah_combo.currentData(),
+            "reciter": reciter,
+            "from_surah": from_surah,
+            "to_surah": to_surah,
         }
 
         if self.mode == DownloadMode.AYAH:
-            data["from_ayah"] = self.from_ayah_combo.currentData()
-            data["to_ayah"] = self.to_ayah_combo.currentData()
+            from_ayah = self.from_ayah_combo.currentData()
+            to_ayah = self.to_ayah_combo.currentData()
+
+            # Auto-correct ayah range (only if same surah)
+            if from_surah.number == to_surah.number and from_ayah > to_ayah:
+                to_ayah = from_ayah
+
+            data["from_ayah"] = from_ayah
+            data["to_ayah"] = to_ayah
 
         return data
