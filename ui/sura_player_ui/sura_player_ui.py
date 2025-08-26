@@ -173,7 +173,7 @@ class SuraPlayerWindow(QMainWindow):
         self.menubar.forward_action.triggered.connect(lambda: self.forward())
         self.rewind_button.clicked.connect(lambda: self.rewind())
         self.menubar.rewind_action.triggered.connect(lambda: self.rewind())
-        self.menubar.replay_action.triggered.connect(lambda: self.replay(speak_time=True))
+        self.menubar.replay_action.triggered.connect(self.replay)
         self.volume_up_button.clicked.connect(self.increase_volume)
         self.menubar.up_volume_action.triggered.connect(self.increase_volume)
         self.volume_down_button.clicked.connect(self.decrease_volume)
@@ -317,7 +317,6 @@ class SuraPlayerWindow(QMainWindow):
         self.player.stop()
         self.audio_player_thread.manually_stopped = True
         self.audio_looper.clear_loop()
-        self.current_surah_repeat_count = 0
         logger.info("Playback stopped.")
 
     def forward(self, step = 5):
@@ -344,11 +343,10 @@ class SuraPlayerWindow(QMainWindow):
             if by_percent:
                 UniversalSpeech.say(f"{self.elapsed_time_label.text()}، الوقت الحالي.")
 
-    def replay(self, speak_time=False):
+    def replay(self):
         logger.debug("Replaying Surah.")
         self.set_position(0)
         self.on_update_time(self.player.get_position(), self.player.get_length())
-#        if speak_time:
         UniversalSpeech.say(f"{self.elapsed_time_label.text()}، الوقت الحالي.")
         logger.debug("Surah replayed.")
         
@@ -558,6 +556,7 @@ class SuraPlayerWindow(QMainWindow):
                 self.current_surah_repeat_count += 1
                 logger.debug(f"Repeating Surah: repeat {self.current_surah_repeat_count}/{repeat_count}")
                 self._repeat_current_surah()
+                UniversalSpeech.say(f"تكرار سورة {self.surah_combo.currentText()}، {self.current_surah_repeat_count +1} من {repeat_count} مرات.", interrupt=True)
                 return True
             else:
                 logger.debug("Surah repeat count reached limit, resetting counter.")
@@ -585,16 +584,18 @@ class SuraPlayerWindow(QMainWindow):
         """
         Repeat the current Surah without announcing the time.
         """
-        self.replay(speak_time=False)
+        self.replay()
         self.play_current_surah()
 
 
     def _replay_current_surah(self):
         """
-        Replay the current Surah and optionally announce the time.
+            Replay the current Surah and optionally announce the time.
         """
         self.replay()
         self.play_current_surah()
+        UniversalSpeech.say(f"تكرار سورة {self.surah_combo.currentText()}.", interrupt=True)
+
 
     def _play_next_surah(self):
         """
@@ -605,3 +606,4 @@ class SuraPlayerWindow(QMainWindow):
         if current_index < last_index:
             logger.debug("Moving to the next Surah as per settings.")
             self.next_surah()
+
