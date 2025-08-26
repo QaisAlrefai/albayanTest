@@ -42,6 +42,8 @@ class SuraPlayerWindow(QMainWindow):
         self.filter_manager = FilterManager()
         self.key_handler = KeyHandler(self)
         self.audio_looper = AudioLooper(self, self.player)
+        self.current_surah_repeat_count = 0
+        self.last_played_surah = None  # (reciter_id, surah_number)
 
 
         central_widget = QWidget()
@@ -171,7 +173,7 @@ class SuraPlayerWindow(QMainWindow):
         self.menubar.forward_action.triggered.connect(lambda: self.forward())
         self.rewind_button.clicked.connect(lambda: self.rewind())
         self.menubar.rewind_action.triggered.connect(lambda: self.rewind())
-        self.menubar.replay_action.triggered.connect(self.replay)
+        self.menubar.replay_action.triggered.connect(lambda: self.replay(speak_time=True))
         self.volume_up_button.clicked.connect(self.increase_volume)
         self.menubar.up_volume_action.triggered.connect(self.increase_volume)
         self.volume_down_button.clicked.connect(self.decrease_volume)
@@ -296,6 +298,11 @@ class SuraPlayerWindow(QMainWindow):
         logger.debug("Playing current Surah.")
         reciter_id = self.reciter_combo.currentData()
         surah_number = self.surah_combo.currentData()
+
+        if self.last_played_surah != (reciter_id, surah_number):
+            logger.debug("New Surah or Reciter detected, resetting repeat counter.")
+            self.current_surah_repeat_count = 0
+            self.last_played_surah = (reciter_id, surah_number)
         url = self.reciters.get_url(reciter_id, surah_number)
         self.audio_player_thread.set_audio_url(url)
         self.audio_player_thread.start()
@@ -309,6 +316,7 @@ class SuraPlayerWindow(QMainWindow):
         self.player.stop()
         self.audio_player_thread.manually_stopped = True
         self.audio_looper.clear_loop()
+        self.current_surah_repeat_count = 0
         logger.info("Playback stopped.")
 
     def forward(self, step = 5):
@@ -335,11 +343,12 @@ class SuraPlayerWindow(QMainWindow):
             if by_percent:
                 UniversalSpeech.say(f"{self.elapsed_time_label.text()}، الوقت الحالي.")
 
-    def replay(self):
+    def replay(self, speak_time=False):
         logger.debug("Replaying Surah.")
         self.set_position(0)
         #self.on_update_time(self.player.get_position(), self.player.get_length())
-        UniversalSpeech.say(f"{self.elapsed_time_label.text()}، الوقت الحالي.")
+        if speak_time:
+            UniversalSpeech.say(f"{self.elapsed_time_label.text()}، الوقت الحالي.")
         logger.debug("Surah replayed.")
         
     def next_surah(self):
@@ -523,17 +532,76 @@ class SuraPlayerWindow(QMainWindow):
 
 
     def handle_surah_end(self):
-        """Handle what to do when a Surah finishes playing based on SurahPlayerSettings."""
+        """
+        Handle the signal when a Surah finishes playing.
+        Checks repeat settings and executes the configured action after Surah.
+        """
         logger.debug("Surah finished playing. Checking SurahPlayerSettings for next action.")
+
+        if self._handle_surah_repeats():
+            return
+
+        self._handle_action_after_surah()
+
+
+    def _handle_surah_repeats(self) -> bool:
+        """
+        Handle repeat logic for the current Surah.
+        Returns True if a repeat was executed, False otherwise.
+        """
+        repeat_count = Config.surah_player.surah_repeat_count
         action = Config.surah_player.action_after_surah
-        if action == 1:
-            logger.debug("Replaying the current Surah as per settings.")
-            self.replay()
-        elif action == 2:
-            current_index = self.surah_combo.currentIndex()
-            last_index = self.surah_combo.count() - 1
-            if current_index < last_index:
-                logger.debug("Moving to the next Surah as per settings.")
-                self.next_surah()
+
+        if repeat_count > 1 and action != 1:
+            if self.current_surah_repeat_count < repeat_count - 1:
+                self.current_surah_repeat_count += 1
+                logger.debug(f"Repeating Surah: repeat {self.current_surah_repeat_count}/{repeat_count}")
+                self._repeat_current_surah()
+                return True
+            else:
+                logger.debug("Surah repeat count reached limit, resetting counter.")
+                self.current_surah_repeat_count = 0
+        return False
+
+
+    def _handle_action_after_surah(self):
+        """
+        Execute the action after the Surah finishes, based on configuration.
+        """
+        actions = {
+            1: self._replay_current_surah,
+            2: self._play_next_surah
+        }
+        action = Config.surah_player.action_after_surah
+        handler = actions.get(action)
+        if handler:
+            handler()
         else:
-            logger.debug("No action defined after Surah ends. Stopping playback.")
+            logger.debug("No action defined after Surah ends.")
+
+
+    def _repeat_current_surah(self):
+        """
+        Repeat the current Surah without announcing the time.
+        """
+        self.replay(speak_time=False)
+        self.play_current_surah()
+
+
+    def _replay_current_surah(self):
+        """
+        Replay the current Surah and optionally announce the time.
+        """
+        self.replay()
+        self.play_current_surah()
+
+
+    def _play_next_surah(self):
+        """
+        Move to the next Surah if available.
+        """
+        current_index = self.surah_combo.currentIndex()
+        last_index = self.surah_combo.count() - 1
+        if current_index < last_index:
+            logger.debug("Moving to the next Surah as per settings.")
+            self.next_surah()
