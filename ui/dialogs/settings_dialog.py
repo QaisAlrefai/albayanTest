@@ -293,12 +293,20 @@ class SettingsDialog(QDialog):
         self.group_surah_player = QGroupBox("إعدادات مشغل السور")
         self.group_surah_player_layout = QVBoxLayout()
 
+        self.repeat_surah_label = QLabel("عدد مرات تشغيل وتكرار السورة:")
+        self.repeat_surah_spinbox = SpinBox(self)
+        self.repeat_surah_spinbox.setAccessibleName(self.repeat_surah_label.text())
+        self.repeat_surah_spinbox.setRange(1, 10)
+
+
         self.action_after_surah_label = QLabel("الإجراء بعد نهاية السورة:")
         self.action_after_surah_combo = QComboBox()
         items_surah = [("إيقاف", 0), ("تكرار السورة", 1), ("الانتقال إلى السورة التالية", 2)]
         [self.action_after_surah_combo.addItem(text, id) for text, id in items_surah]
         self.action_after_surah_combo.setAccessibleName(self.action_after_surah_label.text())
 
+        self.group_surah_player_layout.addWidget(self.repeat_surah_label)
+        self.group_surah_player_layout.addWidget(self.repeat_surah_spinbox)
         self.group_surah_player_layout.addWidget(self.action_after_surah_label)
         self.group_surah_player_layout.addWidget(self.action_after_surah_combo)
         self.group_surah_player_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
@@ -306,6 +314,14 @@ class SettingsDialog(QDialog):
 
         self.group_downloading = QGroupBox("إعدادات التنزيل")
         self.group_downloading_layout = QVBoxLayout()
+
+        self.files_to_download_at_the_same_time_label = QLabel("عدد الملفات التي يمكن تنزيلها في نفس الوقت:")
+        self.files_to_download_at_the_same_time_combo = QComboBox()
+        items_files = [("ملف 1", 1), ("ملفين", 2), ("3 ملفات", 3), ("4 ملفات", 4), ("5 ملفات", 5)]
+        [self.files_to_download_at_the_same_time_combo.addItem(text, id) for text, id in items_files]
+        self.files_to_download_at_the_same_time_combo.setAccessibleName(self.files_to_download_at_the_same_time_label.text())
+
+
 
         self.download_path_label = QLabel("مسار التنزيل الحالي:")
         self.download_path_edit = QLineEdit()
@@ -316,6 +332,10 @@ class SettingsDialog(QDialog):
 
         self.change_download_path_button = QPushButton("تغيير المسار")
 
+
+
+        self.group_downloading_layout.addWidget(self.files_to_download_at_the_same_time_label)  
+        self.group_downloading_layout.addWidget(self.files_to_download_at_the_same_time_combo)
         self.group_downloading_layout.addWidget(self.download_path_label)
         self.group_downloading_layout.addWidget(self.download_path_edit)
         self.group_downloading_layout.addWidget(self.change_download_path_button)
@@ -529,7 +549,10 @@ class SettingsDialog(QDialog):
         Config.reading.marks_type = self.marks_type_combo.currentData().value
 
         Config.surah_player.action_after_surah = self.action_after_surah_combo.currentData()
+        Config.surah_player.surah_repeat_count = self.repeat_surah_spinbox.value()
 
+
+        Config.downloading.files_to_download_at_the_same_time = self.files_to_download_at_the_same_time_combo.currentData()
         Config.downloading.download_path = self.download_path_edit.text()
 
         Config.search.ignore_tashkeel = self.ignore_tashkeel_checkbox.isChecked()
@@ -578,6 +601,7 @@ class SettingsDialog(QDialog):
         self.duration_spinbox.setValue(Config.listening.forward_time)
         self.repeat_limit_spinbox.setValue(Config.listening.ayah_repeat_count)
         self.text_repeat_spinbox.setValue(Config.listening.text_repeat_count)
+        self.repeat_surah_spinbox.setValue(Config.surah_player.surah_repeat_count)
         self.auto_move_focus_checkbox.setChecked(Config.listening.auto_move_focus)
         self.download_path_edit.setText(Config.downloading.download_path)
         self.ignore_tashkeel_checkbox.setChecked(Config.search.ignore_tashkeel)
@@ -591,6 +615,7 @@ class SettingsDialog(QDialog):
         (self.action_after_text_combo    , Config.listening.action_after_text),
             (self.font_type_combo, QuranFontType.from_int(Config.reading.font_type)),
     (self.marks_type_combo, MarksType.from_int(Config.reading.marks_type)),
+    (self.files_to_download_at_the_same_time_combo, Config.downloading.files_to_download_at_the_same_time),
     (self.action_after_surah_combo, Config.surah_player.action_after_surah),
             (self.ayah_device_combo, Config.audio.ayah_device),
             (self.surah_device_combo, Config.audio.surah_device),

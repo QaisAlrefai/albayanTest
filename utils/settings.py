@@ -87,11 +87,13 @@ class ReadingSettings(BaseSection):
 @dataclass
 class SurahPlayerSettings(BaseSection):
     SECTION_NAME: ClassVar[str] = "surah_player"
+    surah_repeat_count: int = 1
     action_after_surah: int = 0
 
 @dataclass
 class DownloadingSettings(BaseSection):
     SECTION_NAME: ClassVar[str] = "downloading"
+    files_to_download_at_the_same_time: int = 1
     download_path: str = os.path.join(albayan_documents_dir, "Downloads")
 
 @dataclass
