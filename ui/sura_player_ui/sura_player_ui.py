@@ -296,6 +296,7 @@ class SuraPlayerWindow(QMainWindow):
 
     def play_current_surah(self):
         logger.debug("Playing current Surah.")
+        self.stop()
         reciter_id = self.reciter_combo.currentData()
         surah_number = self.surah_combo.currentData()
 
@@ -346,9 +347,9 @@ class SuraPlayerWindow(QMainWindow):
     def replay(self, speak_time=False):
         logger.debug("Replaying Surah.")
         self.set_position(0)
-        #self.on_update_time(self.player.get_position(), self.player.get_length())
-        if speak_time:
-            UniversalSpeech.say(f"{self.elapsed_time_label.text()}، الوقت الحالي.")
+        self.on_update_time(self.player.get_position(), self.player.get_length())
+#        if speak_time:
+        UniversalSpeech.say(f"{self.elapsed_time_label.text()}، الوقت الحالي.")
         logger.debug("Surah replayed.")
         
     def next_surah(self):
@@ -594,7 +595,6 @@ class SuraPlayerWindow(QMainWindow):
         """
         self.replay()
         self.play_current_surah()
-
 
     def _play_next_surah(self):
         """
