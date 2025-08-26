@@ -6,7 +6,7 @@ from ui.dialogs.settings_dialog import SettingsDialog
 from ui.dialogs.bookmark_dialog import BookmarkDialog
 from ui.dialogs.go_to import GoToDialog, GoToStyle
 from ui.dialogs.athkar_dialog import AthkarDialog
-from ui.dialogs.download_dialog import MainDialog as DownloadDialog
+from ui.dialogs.download_dialog import DownloadManagerDialog
 from ui.sura_player_ui import SuraPlayerWindow
 from ui.dialogs.tasbih_dialog import TasbihDialog
 from core_functions.quran.types import NavigationMode
@@ -279,7 +279,7 @@ class MenuBar(QMenuBar):
 
     def open_download_manager(self):
         logger.debug("Opening Download Manager dialog.")
-        download_dialog = DownloadDialog(self.parent)
+        download_dialog = DownloadManagerDialog(self.parent)
         download_dialog.open()
         logger.debug("Download Manager dialog opened.")
 
