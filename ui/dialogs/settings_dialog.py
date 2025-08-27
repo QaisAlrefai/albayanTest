@@ -213,7 +213,7 @@ class SettingsDialog(QDialog):
         self.action_label = QLabel("الإجراء بعد الاستماع لكل آية:")
         self.action_combo = QComboBox()
         items_with_ids = [("إيقاف", 0), ("تكرار الآية بلا نهاية", 1), ("الانتقال إلى الآية التالية", 2)]
-        [self.action_combo.addItem(text, id) for text, id in items_with_ids]
+        for text, id in sorted(items_with_ids, key=lambda x: x[1]==1): self.action_combo.addItem(text, id)
         self.action_combo.setAccessibleName(self.action_label.text())
 
 
@@ -228,7 +228,7 @@ class SettingsDialog(QDialog):
         self.action_after_text_label = QLabel("الإجراء بعد نهاية النص:")
         self.action_after_text_combo = QComboBox()
         items_after_text = [("إيقاف", 0), ("تكرار النص الحالي بلا نهاية", 1), ("تنبيه صوتي", 2), ("الانتقال إلى التالي", 3)]
-        [self.action_after_text_combo.addItem(text, id) for text, id in items_after_text]
+        for text, id in sorted(items_after_text, key=lambda x: x[1]==1): self.action_after_text_combo.addItem(text, id)
         self.action_after_text_combo.setAccessibleName(self.action_after_text_label.text())
 
         self.duration_label = QLabel("مدة التقديم والترجيع (بالثواني):")
@@ -301,8 +301,8 @@ class SettingsDialog(QDialog):
 
         self.action_after_surah_label = QLabel("الإجراء بعد نهاية السورة:")
         self.action_after_surah_combo = QComboBox()
-        items_surah = [("إيقاف", 0), ("تكرار السورة", 1), ("الانتقال إلى السورة التالية", 2)]
-        [self.action_after_surah_combo.addItem(text, id) for text, id in items_surah]
+        items_surah = [("إيقاف", 0), ("تكرار السورة بلا نهاية", 1), ("الانتقال إلى السورة التالية", 2)]
+        for text, id in sorted(items_surah, key=lambda x: x[1]==1): self.action_after_surah_combo.addItem(text, id)
         self.action_after_surah_combo.setAccessibleName(self.action_after_surah_label.text())
 
         self.group_surah_player_layout.addWidget(self.repeat_surah_label)
@@ -311,6 +311,10 @@ class SettingsDialog(QDialog):
         self.group_surah_player_layout.addWidget(self.action_after_surah_combo)
         self.group_surah_player_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
         self.group_surah_player.setLayout(self.group_surah_player_layout)
+
+
+        self.action_after_surah_combo.currentIndexChanged.connect(self.update_repeat_surah_state)
+        self.repeat_surah_spinbox.valueChanged.connect(self.update_action_after_surah_combo_label)
 
         self.group_downloading = QGroupBox("إعدادات التنزيل")
         self.group_downloading_layout = QVBoxLayout()
@@ -402,6 +406,14 @@ class SettingsDialog(QDialog):
 
         self.update_action_combo_label(self.repeat_limit_spinbox.value())
         self.update_action_after_text_combo_label(self.text_repeat_spinbox.value())
+        self.update_action_after_surah_combo_label(self.repeat_surah_spinbox.value())
+
+
+
+    def update_repeat_surah_state(self):
+        """Disable or enable repeat_surah_spinbox based on action_after_surah_combo selection."""
+        current_id = self.action_after_surah_combo.currentData()
+        self.repeat_surah_spinbox.setEnabled(current_id != 1)
 
     def update_repeat_limit_state(self):
         current_id = self.action_combo.currentData()
@@ -419,21 +431,57 @@ class SettingsDialog(QDialog):
             self.text_repeat_spinbox.setEnabled(True)
 
 
+
+
+
     def update_action_combo_label(self, value: int):
-        forms = {
-            1: "مرة واحدة",
-            2: "مرتين"
+        forms = {1: "مرة واحدة", 2: "مرتين"}
+        times_text = forms.get(value, f"{value} مرات")
+
+
+        templates = {
+            0: "تشغيل الآية {} ثم إيقاف",
+            2: "تشغيل الآية {} ثم الانتقال إلى الآية التالية",
         }
-        text = forms.get(value, f"{value} مرات")
-        self.action_combo.setItemText(0, f"تشغيل الآية {text} ثم إيقاف")
+
+        for i in range(self.action_combo.count()):
+            id = self.action_combo.itemData(i)
+            if id in templates:
+                self.action_combo.setItemText(i, templates[id].format(times_text))
+
+    def update_action_after_surah_combo_label(self, value: int):
+
+        templates = {
+            0: "تشغيل السورة {} ثم إيقاف",
+            2: "تشغيل السورة {} ثم الانتقال إلى السورة التالية",
+        }
+
+
+        forms = {1: "مرة واحدة", 2: "مرتين"}
+        times_text = forms.get(value, f"{value} مرات")
+
+        for i in range(self.action_after_surah_combo.count()):
+            id = self.action_after_surah_combo.itemData(i)
+            if id in templates:
+                self.action_after_surah_combo.setItemText(i, templates[id].format(times_text))
+
 
     def update_action_after_text_combo_label(self, value: int):
-        forms = {
-            1: "مرة واحدة",
-            2: "مرتين"
+        forms = {1: "مرة واحدة", 2: "مرتين"}
+        times_text = forms.get(value, f"{value} مرات")
+
+        templates = {
+            0: "تشغيل {} ثم إيقاف",
+            2: "تشغيل {} ثم تنبيه صوتي",
+            3: "تشغيل {} ثم الانتقال إلى التالي",
         }
-        text = forms.get(value, f"{value} مرات")
-        self.action_after_text_combo.setItemText(0, f"تشغيل {text} ثم إيقاف")
+
+        for i in range(self.action_after_text_combo.count()):
+            id = self.action_after_text_combo.itemData(i)
+            if id in templates:
+                self.action_after_text_combo.setItemText(i, templates[id].format(times_text))
+
+
 
     def change_download_path(self):
         logger.debug("Changing download path.")
