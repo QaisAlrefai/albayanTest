@@ -1,6 +1,7 @@
 import os
 import time
 import ctypes
+from ctypes import c_char
 from typing import List, Optional
 from urllib.parse import urlparse
 from .status import PlaybackStatus
@@ -224,6 +225,15 @@ class AudioPlayer:
     def is_stopped(self) -> bool:
         """Checks if the audio is currently stopped."""
         return self.get_playback_status() == PlaybackStatus.STOPPED   
+
+    def is_finished(self) -> bool:
+        """Checks if the audio playback has finished."""
+        if self.is_stopped() and self.current_channel:
+            buf = (c_char * 4)()
+            ret = bass.BASS_ChannelGetData(self.current_channel, buf, 4)
+            return ret == -1 and self.get_error() == PlaybackStatus.FINISHED.value
+        else:
+            return False
 
     def set_channel_device(self, device: int) -> None:
         """Sets the device for the current channel."""

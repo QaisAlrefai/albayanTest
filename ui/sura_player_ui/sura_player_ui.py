@@ -296,7 +296,6 @@ class SuraPlayerWindow(QMainWindow):
 
     def play_current_surah(self):
         logger.debug("Playing current Surah.")
-        self.stop()
         reciter_id = self.reciter_combo.currentData()
         surah_number = self.surah_combo.currentData()
 
@@ -315,7 +314,7 @@ class SuraPlayerWindow(QMainWindow):
         logger.debug("Stopping playback.")
         self.set_position(0)
         self.player.stop()
-        self.audio_player_thread.manually_stopped = True
+        #self.audio_player_thread.manually_stopped = True
         self.audio_looper.clear_loop()
         logger.info("Playback stopped.")
 

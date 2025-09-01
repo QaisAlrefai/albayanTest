@@ -1,6 +1,6 @@
 import os
 import ctypes
-from ctypes import c_int, c_longlong, c_void_p, c_uint, c_double, c_char_p, c_bool
+from ctypes import c_int, c_longlong, c_void_p, c_uint, c_double, c_char_p, c_char, c_bool
 from enum import IntFlag
 from dataclasses import dataclass
 from typing import List
@@ -58,6 +58,7 @@ class BassInitializer:
         # Load the BASS library
         self.bass = ctypes.CDLL(self.bass_library_path)
         logger.info("BASS library loaded successfully.")
+
         # Setup argument and return types for BASS functions
         self.bass.BASS_Init.argtypes = [c_int, c_uint, c_uint, c_void_p, c_void_p]
         self.bass.BASS_Init.restype = c_int
@@ -79,6 +80,8 @@ class BassInitializer:
         self.bass.BASS_ChannelGetLength.restype = c_longlong
         self.bass.BASS_ChannelGetPosition.argtypes = [c_int, c_uint]
         self.bass.BASS_ChannelGetPosition.restype = c_longlong
+        self.bass.BASS_ChannelGetData.argtypes = [c_uint, c_void_p, c_uint]
+        self.bass.BASS_ChannelGetData.restype = c_int
         self.bass.BASS_ChannelSetDevice.argtypes = [c_uint, c_uint]
         self.bass.BASS_ChannelSetDevice.restype = c_bool
         self.bass.BASS_ErrorGetCode.restype = c_int
