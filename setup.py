@@ -33,7 +33,7 @@ def build_setup(script_name="Albayan.py", build_dir="albayan_build", version="4.
     include_files = get_include_files()
     build_exe_options = {
         "build_exe": build_dir,
-        "optimize": 1,
+        "optimize": 2,
         "include_files": include_files,
         "packages": ["core_functions", "theme", "ui", "utils"],
         "includes": [
@@ -42,7 +42,8 @@ def build_setup(script_name="Albayan.py", build_dir="albayan_build", version="4.
             "sqlalchemy.dialects.sqlite", "apscheduler"
         ],
         "excludes": ["tkinter", "test", "setuptools", "pip", "numpy", "unittest"],
-        "include_msvcr": True
+        "include_msvcr": False,
+        "replace_paths": ["*="]
     }
 
     setup(
