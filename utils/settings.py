@@ -87,6 +87,7 @@ class ReadingSettings(BaseSection):
 @dataclass
 class SurahPlayerSettings(BaseSection):
     SECTION_NAME: ClassVar[str] = "surah_player"
+    play_surah_in_background_enabled: bool = False
     surah_repeat_count: int = 1
     action_after_surah: int = 0
 

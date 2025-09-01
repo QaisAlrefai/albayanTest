@@ -305,10 +305,14 @@ class SettingsDialog(QDialog):
         for text, id in sorted(items_surah, key=lambda x: x[1]==1): self.action_after_surah_combo.addItem(text, id)
         self.action_after_surah_combo.setAccessibleName(self.action_after_surah_label.text())
 
+        self.player_in_background_checkbox = QCheckBox("تشغيل السور في الخلفية")
+
+
         self.group_surah_player_layout.addWidget(self.repeat_surah_label)
         self.group_surah_player_layout.addWidget(self.repeat_surah_spinbox)
         self.group_surah_player_layout.addWidget(self.action_after_surah_label)
         self.group_surah_player_layout.addWidget(self.action_after_surah_combo)
+        self.group_surah_player_layout.addWidget(self.player_in_background_checkbox)
         self.group_surah_player_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
         self.group_surah_player.setLayout(self.group_surah_player_layout)
 
@@ -598,7 +602,7 @@ class SettingsDialog(QDialog):
 
         Config.surah_player.action_after_surah = self.action_after_surah_combo.currentData()
         Config.surah_player.surah_repeat_count = self.repeat_surah_spinbox.value()
-
+        Config.surah_player.play_surah_in_background_enabled = self.player_in_background_checkbox.isChecked()
 
         Config.downloading.files_to_download_at_the_same_time = self.files_to_download_at_the_same_time_combo.currentData()
         Config.downloading.download_path = self.download_path_edit.text()
@@ -650,6 +654,7 @@ class SettingsDialog(QDialog):
         self.repeat_limit_spinbox.setValue(Config.listening.ayah_repeat_count)
         self.text_repeat_spinbox.setValue(Config.listening.text_repeat_count)
         self.repeat_surah_spinbox.setValue(Config.surah_player.surah_repeat_count)
+        self.player_in_background_checkbox.setChecked(Config.surah_player.play_surah_in_background_enabled)
         self.auto_move_focus_checkbox.setChecked(Config.listening.auto_move_focus)
         self.download_path_edit.setText(Config.downloading.download_path)
         self.ignore_tashkeel_checkbox.setChecked(Config.search.ignore_tashkeel)
