@@ -508,20 +508,32 @@ class SuraPlayerWindow(QMainWindow):
 
 
     def OnClose(self):
-        logger.info("Closing the player.")
-        logger.debug("Stopping the player...")
-        self.stop()
-        logger.info("Player stopped.")
-        logger.debug("Quitting the audio player thread...")
-        self.audio_player_thread.quit()
-        logger.info("Audio player thread quit.")
-        logger.debug("Closing the current window...")
-        self.close()
-        logger.info("Window closed.")
+        logger.info("Closing the player window...")
+
+        if Config.surah_player.play_surah_in_background_enabled:
+            logger.info("Play in background is enabled. Closing the window only, without stopping the player thread.")
+            logger.debug("Closing the current window...")
+            self.close()
+            logger.info("Window closed. Audio player continues running in background.")
+        else:
+            logger.debug("Play in background is disabled. Proceeding to stop player and quit thread.")
+            logger.debug("Stopping the player...")
+            self.stop()
+            logger.info("Player stopped.")
+
+            logger.debug("Quitting the audio player thread...")
+            self.audio_player_thread.quit()
+            logger.info("Audio player thread quit.")
+
+            logger.debug("Closing the current window...")
+            self.close()
+            logger.info("Window closed.")
+
         logger.debug("Showing the main window...")
         self.parent.show()
-    logger.info("Main window shown.")
-    logger.info("Player closed successfully.")
+        logger.info("Main window shown.")
+        logger.info("Player close process completed.")
+
 
 
     def closeEvent(self, a0):

@@ -19,12 +19,16 @@ class SystemTrayManager:
         show_action = QAction("إظهار النافذة الرئيسية", main_window)
         show_action.triggered.connect(self.show_main_window)
         tray_menu.addAction(show_action)
-        logger.debug("Show action added to tray menu.")
+
+
+        sura_action = QAction("إظهار مشغل السور", main_window)
+        sura_action.triggered.connect(self.show_sura_player)
+        tray_menu.addAction(sura_action)
 
         quit_action = QAction("إغلاق البرنامج", main_window)
         quit_action.triggered.connect(self.main_window.menu_bar.quit_application)
         tray_menu.addAction(quit_action)
-        logger.debug("Quit action added to tray menu.")
+
 
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
@@ -34,16 +38,25 @@ class SystemTrayManager:
     def show_main_window(self):
         logger.debug("Tray icon clicked - attempting to show main window.")
         if self.main_window.menu_bar.sura_player_window is not None and  self.main_window.menu_bar.sura_player_window.isVisible():
-            logger.debug("Sura Player window is active, bringing it to the front.")
-            self.main_window.menu_bar.sura_player_window.activateWindow()
-            self.main_window.menu_bar.sura_player_window.raise_()
-            logger.debug("Sura Player window is now active.")
-            return
+            logger.debug("Sura Player window is active, closing it before showing main window.")
+            self.main_window.menu_bar.sura_player_window.close()
+
 
         self.main_window.show()
         self.main_window.raise_()
         self.main_window.activateWindow()
         logger.debug("Main window is now visible and active.")
+
+
+    def show_sura_player(self):
+        logger.debug("Tray menu option clicked - attempting to show Sura Player.")
+        if self.main_window.isVisible():
+            logger.debug("Main window is active, hiding it before showing Sura Player.")
+            self.main_window.hide()
+
+        self.main_window.menu_bar.OnSuraPlayer()
+        logger.debug("Sura Player window is now visible.")
+ 
 
     def on_tray_icon_click(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
