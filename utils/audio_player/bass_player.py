@@ -3,7 +3,6 @@ import os
 import time
 import ctypes
 from ctypes import c_char
-from tkinter import N
 from typing import List, Optional, Callable
 from urllib.parse import urlparse
 from .status import PlaybackStatus
