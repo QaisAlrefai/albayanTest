@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton, QLabel, QGridLayout
+    QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton, QLabel, QGridLayout, QLineEdit, QListWidget, QMenu
 )
 from PyQt6.QtCore import Qt
 from typing import List
