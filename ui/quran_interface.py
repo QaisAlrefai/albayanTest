@@ -90,6 +90,7 @@ class QuranInterface(QMainWindow):
     def set_shortcut(self):
         QShortcut(QKeySequence("Ctrl+M"), self).activated.connect(lambda: self.quran_view.setFocus())
         QShortcut(QKeySequence("C"), self).        activated.connect(self.say_played_ayah)
+        QShortcut(QKeySequence("B"), self).        activated.connect(self.say_repeat_ayah)
         QShortcut(QKeySequence("Alt+Shift+C"), self).activated.connect(lambda: self.toolbar.change_ayah_focus(manual=True))
         QShortcut(QKeySequence("V"), self).        activated.connect(self.say_focused_ayah)
 
@@ -510,26 +511,67 @@ class QuranInterface(QMainWindow):
         logger.debug(f"Displaying information for page {current_aya.page}")
         InfoDialog(self, title, label, page_info.text).open()
 
-    def say_played_ayah(self):
-        logger.debug("Say played Ayah action triggered.")
+
+
+    def say_repeat_ayah(self):
+        """Speak the currently focused Ayah, with context on its playback status and repeat count."""
+        logger.debug("Say repeat Ayah action triggered.")
         text = self.statusBar().currentMessage()
         logger.debug(f"Text to be spoken: {text}")
-        if text:
-            if self.toolbar.player.is_playing():
-                UniversalSpeech.say(f"{text}، الآية المشغلة.", force=True)
-                logger.debug(f"{text} is currently playing.")
-            elif self.toolbar.player.is_paused():
-                UniversalSpeech.say(f"{text}، تم إيقافها مؤقتًا.", force=True)
-                logger.debug(f"{text} is paused.")
-            elif self.toolbar.player.is_stopped():
-                UniversalSpeech.say(f"{text}، تم إيقافها.", force=True)
-                logger.debug(f"{text} is stopped.")
-            elif self.toolbar.player.is_stalled():
-                UniversalSpeech.say(f"{text}، يجري تحميلها.", force=True)
-                logger.debug(f"{text} is stalled.")
+        status = self.get_playback_status()
+
+        if text and status["code"] != "playing":
+            UniversalSpeech.say(f"{text}، {status['text']}.", force=True)
+            logger.debug(f"{text} is not currently playing: {status['code']}")
+            return
+
+        if text and Config.listening.action_after_listening == 1:
+            UniversalSpeech.say(f"تكرار {text}.", force=True)
+            logger.debug(f"{text} is currently playing.")
+
+        elif text and self.toolbar.current_repeat == 0 and Config.listening.ayah_repeat_count > 1:
+            UniversalSpeech.say(f"تشغيل {text}، 1 من {Config.listening.ayah_repeat_count} مرات.", force=True)
+            logger.debug(f"{text} is currently playing with no repeats.")
+
+        elif text and self.toolbar.current_repeat > 0:
+            UniversalSpeech.say(
+                f"تكرار {text}، {self.toolbar.current_repeat + 1} من {Config.listening.ayah_repeat_count} مرات.",
+                force=True
+            )
+            logger.debug(f"{text} is being repeated.")
+
+        elif text and self.toolbar.current_repeat < 1 and Config.listening.ayah_repeat_count == 1:
+            UniversalSpeech.say(f"تشغيل {text} بدون تكرار.", force=True)
+            logger.debug(f"{text} is being played first time.")
+
         else:
             UniversalSpeech.say("لم يتم تشغيل أي آية.", force=True)
             logger.debug("No Ayah is currently playing.")
+
+
+
+    def get_playback_status(self) -> dict:
+        """Returns the current playback status as a dictionary with 'code' and 'text'."""
+        if self.toolbar.player.is_playing():
+            return {"code": "playing", "text": "الآية المشغلة"}
+        elif self.toolbar.player.is_paused():
+            return {"code": "paused", "text": "تم إيقافها مؤقتًا"}
+        elif self.toolbar.player.is_stopped():
+            return {"code": "stopped", "text": "تم إيقافها"}
+        elif self.toolbar.player.is_stalled():
+            return {"code": "stalled", "text": "يجري تحميلها"}
+
+
+    def say_played_ayah(self):
+        logger.debug("Say played Ayah action triggered.")
+        text = self.statusBar().currentMessage()
+        status = self.get_playback_status()
+        logger.debug(f"Playback status returned: {status}")
+        if text:
+            UniversalSpeech.say(f"{text}، {status['text']}.", force=True)
+        else:
+            UniversalSpeech.say("لم يتم تشغيل أي آية.", force=True)
+
 
     def say_focused_ayah(self):
         logger.debug("Say focused Ayah action triggered.")
