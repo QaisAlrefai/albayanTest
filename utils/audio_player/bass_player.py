@@ -1,11 +1,13 @@
+from gc import callbacks
 import os
 import time
 import ctypes
 from ctypes import c_char
-from typing import List, Optional
+from tkinter import N
+from typing import List, Optional, Callable
 from urllib.parse import urlparse
 from .status import PlaybackStatus
-from .bass_init import BassInitializer, BassFlag
+from .bass_init import BassInitializer, BassFlag, SYNCPROC, BassSyncFlag
 from utils.logger import LoggerManager
 from exceptions.audio_pplayer import (
     AudioFileNotFoundError, LoadFileError, UnsupportedFormatError, PlaybackControlError,
@@ -36,7 +38,7 @@ class AudioPlayer:
         AudioPlayer.instances.append(self)
         logger.debug(f"Initialized {self.__class__.__name__} with volume={volume}, device={device}, flag={flag}")    
 
-    def load_audio(self, source: str, attempts: Optional[int] = 3) -> None:
+    def load_audio(self, source: str, attempts: Optional[int] = 3, end_callback: Optional[Callable] = None) -> None:
         """Loads an audio file or a URL for playback."""
         logger.info(f"Loading audio: {source}")
         # Stop and release the previous file
@@ -78,6 +80,12 @@ class AudioPlayer:
         self.source = source
         self.set_channel_device(self.device)
         self.set_volume(self.volume) 
+
+        if end_callback is not None:
+            self.sync_callback = SYNCPROC(lambda handle, channel, data, user: end_callback())
+            bass.BASS_ChannelSetSync(self.current_channel, BassSyncFlag.END | BassSyncFlag.THREAD, 0, self.sync_callback, None)
+            print("Set end callback.")
+
         logger.info(f"Successfully loaded: {source}, {self.volume}, {self.device}.")
 
     def play(self) -> None:
@@ -231,7 +239,8 @@ class AudioPlayer:
         if self.is_stopped() and self.current_channel:
             buf = (c_char * 4)()
             ret = bass.BASS_ChannelGetData(self.current_channel, buf, 4)
-            return ret == -1 and self.get_error() == PlaybackStatus.FINISHED.value
+            eror_code = self.get_error()
+            return ret == -1 and eror_code == PlaybackStatus.FINISHED.value
         else:
             return False
 

@@ -35,7 +35,7 @@ class AudioPlayerThread(QThread):
                     if self.player.source != self.url or self.player.is_stopped():
                         logger.debug(f"Loading new audio file: {self.url}")
                         self.file_changed.emit(self.url)
-                        self.player.load_audio(self.url)
+                        self.player.load_audio(self.url, end_callback=self.playback_finished.emit)
                     self.player.play()
                     self.manually_stopped = False
                     logger.debug(f"Playback started for: {self.url}")
@@ -56,8 +56,6 @@ class AudioPlayerThread(QThread):
         if not self.player.is_playing() and not self.player.is_stalled():
             self.timer.stop()
             self.statusChanged.emit()
-            if self.player.is_finished():
-                self.playback_finished.emit()
 
     def set_audio_url(self, url: str, send_error_signal: bool = True):
         logger.debug(f"Setting audio URL: {url}")

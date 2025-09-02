@@ -9,6 +9,8 @@ from utils.logger import LoggerManager
 
 logger = LoggerManager.get_logger(__name__)
 
+SYNCPROC = ctypes.WINFUNCTYPE(None, c_int, c_int, c_int, c_void_p)
+ 
 class BassFlag(IntFlag):
     AUTO_FREE = 0x40000  # Automatically free the stream when it stops/ends
     STREAM_BLOCK = 0x100000  # Download/play internet file stream in small blocks
@@ -18,6 +20,19 @@ class BassFlag(IntFlag):
     BASS_DEVICE_DEFAULT = 0x2 
     BASS_DEVICE_ENABLED = 0x1 
 
+class BassSyncFlag(IntFlag):
+    END = 2
+    META = 4
+    SLIDE = 5
+    STALL = 6
+    DOWNLOAD = 7
+    FREE = 8
+    POS = 0x10000
+    MUSICPOS = 0x20000
+    SETPOS = 0x200000
+    MIXTIME = 0x40000000
+    ONETIME = 0x80000000
+    THREAD = 0x20000000  # BASS_SYNC_THREAD
 
 class BASS_DEVICEINFO(ctypes.Structure):
     _fields_ = [
@@ -80,8 +95,9 @@ class BassInitializer:
         self.bass.BASS_ChannelGetLength.restype = c_longlong
         self.bass.BASS_ChannelGetPosition.argtypes = [c_int, c_uint]
         self.bass.BASS_ChannelGetPosition.restype = c_longlong
-        self.bass.BASS_ChannelGetData.argtypes = [c_uint, c_void_p, c_uint]
-        self.bass.BASS_ChannelGetData.restype = c_int
+
+        self.bass.BASS_ChannelSetSync.argtypes = [c_uint, c_uint, c_longlong, SYNCPROC, c_void_p]
+        self.bass.BASS_ChannelSetSync.restype = c_uint
         self.bass.BASS_ChannelSetDevice.argtypes = [c_uint, c_uint]
         self.bass.BASS_ChannelSetDevice.restype = c_bool
         self.bass.BASS_ErrorGetCode.restype = c_int
