@@ -5,5 +5,4 @@ class PlaybackStatus(Enum):
     PLAYING = 1
     STALLED = 2
     PAUSED = 3
-    FINISHED = 45
     

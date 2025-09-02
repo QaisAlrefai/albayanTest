@@ -234,16 +234,6 @@ class AudioPlayer:
         """Checks if the audio is currently stopped."""
         return self.get_playback_status() == PlaybackStatus.STOPPED   
 
-    def is_finished(self) -> bool:
-        """Checks if the audio playback has finished."""
-        if self.is_stopped() and self.current_channel:
-            buf = (c_char * 4)()
-            ret = bass.BASS_ChannelGetData(self.current_channel, buf, 4)
-            eror_code = self.get_error()
-            return ret == -1 and eror_code == PlaybackStatus.FINISHED.value
-        else:
-            return False
-
     def set_channel_device(self, device: int) -> None:
         """Sets the device for the current channel."""
         logger.info(f"Setting channel device to {device}, {self.__class__.__name__}.")
