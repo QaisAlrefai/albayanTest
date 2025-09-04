@@ -240,6 +240,8 @@ class SettingsDialog(QDialog):
 
         self.auto_move_focus_checkbox = QCheckBox("نقل المؤشر تلقائيًا إلى الآية التي يتم تشغيلها")
 
+        self.auto_play_checkbox = QCheckBox("تشغيل الآية تلقائيًا عند الذهاب إليها من الذهاب إلى")
+
         self.group_listening_layout.addWidget(self.reciters_label)
         self.group_listening_layout.addWidget(self.reciters_combo)
         self.group_listening_layout.addSpacerItem(QSpacerItem(20, 5, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))  # مسافة نتوسطة
@@ -254,6 +256,7 @@ class SettingsDialog(QDialog):
         self.group_listening_layout.addWidget(self.duration_label)
         self.group_listening_layout.addWidget(self.duration_spinbox)
         self.group_listening_layout.addWidget(self.auto_move_focus_checkbox)
+        self.group_listening_layout.addWidget(self.auto_play_checkbox)
         self.group_listening.setLayout(self.group_listening_layout)
         self.group_listening_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 
@@ -595,6 +598,7 @@ class SettingsDialog(QDialog):
         Config.listening.action_after_text = self.action_after_text_combo.currentData()
         Config.listening.text_repeat_count = self.text_repeat_spinbox.value()
         Config.listening.auto_move_focus = self.auto_move_focus_checkbox.isChecked()
+        Config.listening.auto_play_ayah_after_go_to = self.auto_play_checkbox.isChecked()
 
         Config.reading.font_type = self.font_type_combo.currentData().value
         Config.reading.auto_page_turn = self.turn_pages_checkbox.isChecked()
@@ -656,6 +660,7 @@ class SettingsDialog(QDialog):
         self.repeat_surah_spinbox.setValue(Config.surah_player.surah_repeat_count)
         self.player_in_background_checkbox.setChecked(Config.surah_player.play_surah_in_background_enabled)
         self.auto_move_focus_checkbox.setChecked(Config.listening.auto_move_focus)
+        self.auto_play_checkbox.setChecked(Config.listening.auto_play_ayah_after_go_to)
         self.download_path_edit.setText(Config.downloading.download_path)
         self.ignore_tashkeel_checkbox.setChecked(Config.search.ignore_tashkeel)
         self.ignore_hamza_checkbox.setChecked(Config.search.ignore_hamza)
