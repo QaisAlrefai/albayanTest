@@ -402,7 +402,11 @@ class MenuBar(QMenuBar):
             surah_number, ayah_number_in_surah = go_to_dialog.get_input_value()
             ayah = self.parent.quran_manager.view_content.get_by_ayah_number_in_surah(ayah_number_in_surah, surah_number)
             self.parent.set_focus_to_ayah(ayah.number)
-        self.parent.quran_view.setFocus()
+            if Config.listening.auto_play_ayah_after_go_to:
+                self.parent.toolbar.stop_audio()
+                self.parent.toolbar.toggle_play_pause()
+            self.parent.quran_view.setFocus()
+
 
     def OnTafaseerMenu(self):
         if self.tafaseer_menu.isEnabled():

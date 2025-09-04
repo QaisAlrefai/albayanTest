@@ -68,6 +68,7 @@ class ListeningSettings(BaseSection):
     text_repeat_count: int = 0
     forward_time: int = 5
     auto_move_focus: bool = True
+    auto_play_ayah_after_go_to: bool = False
 
 @dataclass
 class SearchSettings(BaseSection):

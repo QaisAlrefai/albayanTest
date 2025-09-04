@@ -1,13 +1,13 @@
-
 from enum import IntFlag
 from typing import Optional, Union, Tuple
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-    QSpinBox, QComboBox, QPushButton
+    QSpinBox, QComboBox, QPushButton, QCheckBox
 )
 from PyQt6.QtGui import QKeySequence, QShortcut
 import qtawesome as qta
 from ui.widgets.spin_box import SpinBox
+from utils.settings import Config
 from utils.const import Globals
 from utils.universal_speech import UniversalSpeech
 from utils.logger import LoggerManager
@@ -70,7 +70,14 @@ class GoToDialog(QDialog):
             self.spin_box.setFocus()
             main_layout.addWidget(self.spin_box)
 
+
+
+
+
             if self.has_both_fields:
+                self.auto_play_checkbox = QCheckBox("تشغيل الآية تلقائيًا", self)
+                main_layout.addWidget(self.auto_play_checkbox)
+                self.auto_play_checkbox.stateChanged.connect(self._update_auto_play_config)
                 self.combo_box.currentIndexChanged.connect(self._update_spinbox_range_from_combo)
                 self._update_spinbox_range_from_combo()
 
@@ -98,6 +105,9 @@ class GoToDialog(QDialog):
         main_layout.addLayout(button_layout)
         self.setLayout(main_layout)
         self._set_current_value()
+
+        if self.has_both_fields:
+            self.change_auto_play_state()
 
         logger.debug("GoToDialog initialized successfully.")
 
@@ -175,6 +185,15 @@ class GoToDialog(QDialog):
         self.info_label.setAccessibleName(text)
         logger.debug(f"Info label set to: {text}")
 
+    def change_auto_play_state(self):
+        if self.has_both_fields and hasattr(self, "auto_play_checkbox"):
+            self.auto_play_checkbox.setChecked(Config.listening.auto_play_ayah_after_go_to)
+            logger.debug(f"Auto-play checkbox state initialized to: {Config.listening.auto_play_ayah_after_go_to}")
+
+    def _update_auto_play_config(self, state: int):
+        Config.listening.auto_play_ayah_after_go_to = bool(state)
+        logger.debug(f"Auto-play setting updated to: {Config.listening.auto_play_ayah_after_go_to}")
+        Config.save_settings()
 
     def reject(self):
         self.deleteLater()
