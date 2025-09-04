@@ -1,7 +1,9 @@
+from logging import config
 import os
 from PyQt6.QtWidgets import QApplication, QMenuBar, QMenu, QMessageBox
 from PyQt6.QtGui import QIcon, QAction, QKeySequence, QShortcut, QDesktopServices, QActionGroup
 from PyQt6.QtCore import Qt, QUrl
+from yaml import safe_dump
 from ui.dialogs.settings_dialog import SettingsDialog
 from ui.dialogs.bookmark_dialog import BookmarkDialog
 from ui.dialogs.go_to import GoToDialog, GoToStyle
@@ -385,9 +387,11 @@ class MenuBar(QMenuBar):
         combo_label = "اختر السورة"
         
         logger.debug(f"Current Ayah: {current_ayah}, combo_data: {combo_data}")
-        go_to_dialog = GoToDialog(self.parent, title=title, initial_value=current_ayah.sura_name, combo_data=combo_data, style=GoToStyle.NUMERIC_FIELD|GoToStyle.COMBO_FIELD)
+        go_to_dialog = GoToDialog(self.parent, title=title, initial_value=current_ayah.sura_name, combo_data=combo_data, style=GoToStyle.NUMERIC_FIELD|GoToStyle.COMBO_FIELD | GoToStyle.CHECKBOXFIELD)
         go_to_dialog.set_spin_label(spin_label)
         go_to_dialog.set_combo_label(combo_label)
+        go_to_dialog.checkbox_field.setText("تشغيل الآية تلقائيًا")
+
         min_surah_number = min(combo_data.keys())
         max_surah_number = max(combo_data.keys())
 
@@ -398,15 +402,17 @@ class MenuBar(QMenuBar):
         max_surah_name = combo_data[max_surah_number]["label"]
         info_label = (f"أنت في الآية رقم {current_ayah.number_in_surah} من {current_ayah.sura_name}، يمكنك الذهاب بين الآية {min_ayah_number} من {min_surah_name} والآية {max_ayah_number} من {max_surah_name}.")
         go_to_dialog.set_info_label(info_label)
+
         if go_to_dialog.exec():
             surah_number, ayah_number_in_surah = go_to_dialog.get_input_value()
+            Config.listening.auto_play_ayah_after_go_to = go_to_dialog.checkbox_field.isChecked()
+            Config.save_settings()
             ayah = self.parent.quran_manager.view_content.get_by_ayah_number_in_surah(ayah_number_in_surah, surah_number)
             self.parent.set_focus_to_ayah(ayah.number)
             if Config.listening.auto_play_ayah_after_go_to:
                 self.parent.toolbar.stop_audio()
                 self.parent.toolbar.toggle_play_pause()
             self.parent.quran_view.setFocus()
-
 
     def OnTafaseerMenu(self):
         if self.tafaseer_menu.isEnabled():

@@ -18,6 +18,7 @@ logger = LoggerManager.get_logger(__name__)
 class GoToStyle(IntFlag):
     NUMERIC_FIELD = 1
     COMBO_FIELD = 2
+    CHECKBOXFIELD = 4
 
 
 class GoToDialog(QDialog):
@@ -44,6 +45,7 @@ class GoToDialog(QDialog):
 
         self.info_label = QLabel("")
         main_layout.addWidget(self.info_label)
+
         if self.has_combo_field:
             self.combo_label = QLabel("اختر")
             main_layout.addWidget(self.combo_label)
@@ -55,8 +57,6 @@ class GoToDialog(QDialog):
                 self.combo_box.addItem(label, item_id)
             self.combo_box.currentIndexChanged.connect(self._validate_input)
             main_layout.addWidget(self.combo_box)
-
-
 
         if self.has_numeric_field:
             self.spin_label = QLabel("أدخل الرقم:")
@@ -70,14 +70,11 @@ class GoToDialog(QDialog):
             self.spin_box.setFocus()
             main_layout.addWidget(self.spin_box)
 
-
-
-
+        if self.has_checkbox_field:
+            self.checkbox_field = QCheckBox(self)
+            main_layout.addWidget(self.checkbox_field)
 
             if self.has_both_fields:
-                self.auto_play_checkbox = QCheckBox("تشغيل الآية تلقائيًا", self)
-                main_layout.addWidget(self.auto_play_checkbox)
-                self.auto_play_checkbox.stateChanged.connect(self._update_auto_play_config)
                 self.combo_box.currentIndexChanged.connect(self._update_spinbox_range_from_combo)
                 self._update_spinbox_range_from_combo()
 
@@ -106,9 +103,6 @@ class GoToDialog(QDialog):
         self.setLayout(main_layout)
         self._set_current_value()
 
-        if self.has_both_fields:
-            self.change_auto_play_state()
-
         logger.debug("GoToDialog initialized successfully.")
 
     @property
@@ -118,6 +112,10 @@ class GoToDialog(QDialog):
     @property
     def has_numeric_field(self) -> bool:
         return bool(self.style & GoToStyle.NUMERIC_FIELD)
+
+    @property
+    def has_checkbox_field(self) -> bool:
+        return bool(self.style & GoToStyle.CHECKBOXFIELD)
 
     @property
     def has_both_fields(self) -> bool:
@@ -182,18 +180,7 @@ class GoToDialog(QDialog):
 
     def set_info_label(self, text: str):
         self.info_label.setText(text)
-        self.info_label.setAccessibleName(text)
         logger.debug(f"Info label set to: {text}")
-
-    def change_auto_play_state(self):
-        if self.has_both_fields and hasattr(self, "auto_play_checkbox"):
-            self.auto_play_checkbox.setChecked(Config.listening.auto_play_ayah_after_go_to)
-            logger.debug(f"Auto-play checkbox state initialized to: {Config.listening.auto_play_ayah_after_go_to}")
-
-    def _update_auto_play_config(self, state: int):
-        Config.listening.auto_play_ayah_after_go_to = bool(state)
-        logger.debug(f"Auto-play setting updated to: {Config.listening.auto_play_ayah_after_go_to}")
-        Config.save_settings()
 
     def reject(self):
         self.deleteLater()
