@@ -618,3 +618,80 @@ class SuraPlayerWindow(QMainWindow):
             logger.debug("Moving to the next Surah as per settings.")
             self.next_surah()
 
+
+
+
+    def get_surah_playback_status(self) -> dict:
+        """Get the current playback status of the Surah player. Returns a dictionary with 'code' and 'text' keys."""
+        if self.player.is_playing():
+            return {"code": "playing", "text": "السورة مشغلة."}
+        elif self.player.is_paused():
+            return {"code": "paused", "text": "تم إيقاف السورة مؤقتًا."}
+        elif self.player.is_stopped():
+            return {"code": "stopped", "text": "السورة متوقفة."}
+        elif self.player.is_stalled():
+            return {"code": "stalled", "text": "يجري تحميل السورة."}
+        else:
+            return {"code": "unknown", "text": "الحالة غير معروفة."}
+ 
+    def say_surah_repeat_status(self):
+        """Speak the currently playing Surah, with context on its playback status and repeat count."""
+        logger.debug("Say repeat Surah action triggered.")
+
+        status = self.get_surah_playback_status()
+        repeat_count = Config.surah_player.surah_repeat_count
+        action = Config.surah_player.action_after_surah
+        current_repeat = self.current_surah_repeat_count
+        surah_name = self.surah_combo.currentText()
+
+        logger.debug(f"Surah playback status: {status}, current_repeat={current_repeat}, repeat_count={repeat_count}")
+
+
+        if status["code"] != "playing":
+            UniversalSpeech.say(f"{surah_name}، {status['text']}.", force=True)
+            logger.debug(f"Surah {surah_name} is not currently playing: {status['code']}")
+            return
+
+
+        if action == 1:
+            UniversalSpeech.say(f"تكرار سورة {surah_name}.", force=True)
+            logger.debug(f"Surah {surah_name} is set to repeat.")
+            return
+
+
+        if current_repeat >= repeat_count:
+            UniversalSpeech.say(
+                f"تكرار سورة {surah_name}، {current_repeat + 1} من {current_repeat + 1} مرات.",
+                force=True
+            )
+            logger.debug(f"Surah {surah_name} has reached the maximum repeat count.")
+            return
+
+    
+        if current_repeat == 0 and repeat_count > 1:
+            UniversalSpeech.say(
+                f"تشغيل سورة {surah_name}، 1 من {repeat_count} مرات.",
+                force=True
+            )
+            logger.debug(f"Surah {surah_name} is being played first time with repeats planned.")
+            return
+        if current_repeat > 0:
+            UniversalSpeech.say(
+                f"تكرار سورة {surah_name}، {current_repeat + 1} من {repeat_count} مرات.",
+                force=True
+            )
+            logger.debug(f"Surah {surah_name} is being repeated ({current_repeat + 1}/{repeat_count}).")
+            return
+
+
+        if current_repeat < 1 and repeat_count == 1:
+            UniversalSpeech.say(f"تشغيل سورة {surah_name} بدون تكرار.", force=True)
+            logger.debug(f"Surah {surah_name} is being played first time without repeats.")
+            return
+
+    
+        UniversalSpeech.say("لم يتم تشغيل أي سورة.", force=True)
+        logger.debug("No Surah is currently playing.")
+
+
+

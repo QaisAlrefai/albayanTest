@@ -43,6 +43,7 @@ class KeyHandler:
             ord("T"): lambda: UniversalSpeech.say(f"{parent.total_time.text()}، الوقت الإجمالي.", force=True),
             ord("C"): lambda: UniversalSpeech.say(f"{parent.reciter_combo.currentText().split(' - ')[0]}، القارئ الحالي.", force=True),
             ord("V"): lambda: UniversalSpeech.say(f"{parent.surah_combo.currentText()}، السورة الحالية.", force=True),
+            ord("B"): parent.say_surah_repeat_status,
             ord("I"): lambda: UniversalSpeech.say(
                 f"{parent.surah_combo.currentText()}، للقارئ، {parent.reciter_combo.currentText()}.", force=True
             ),
