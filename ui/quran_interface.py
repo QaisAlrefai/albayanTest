@@ -529,6 +529,10 @@ class QuranInterface(QMainWindow):
             UniversalSpeech.say(f"تكرار {text}.", force=True)
             logger.debug(f"{text} is currently playing.")
 
+        elif text and self.toolbar.current_repeat >= Config.listening.ayah_repeat_count:
+            UniversalSpeech.say(f"تكرار {text}، {self.toolbar.current_repeat +1} من {self.toolbar.current_repeat +1} مرات.", force=True)
+            logger.debug(f"{text} has reached the maximum repeat count.")
+
         elif text and self.toolbar.current_repeat == 0 and Config.listening.ayah_repeat_count > 1:
             UniversalSpeech.say(f"تشغيل {text}، 1 من {Config.listening.ayah_repeat_count} مرات.", force=True)
             logger.debug(f"{text} is currently playing with no repeats.")
