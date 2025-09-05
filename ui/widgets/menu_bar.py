@@ -3,7 +3,6 @@ import os
 from PyQt6.QtWidgets import QApplication, QMenuBar, QMenu, QMessageBox
 from PyQt6.QtGui import QIcon, QAction, QKeySequence, QShortcut, QDesktopServices, QActionGroup
 from PyQt6.QtCore import Qt, QUrl
-from yaml import safe_dump
 from ui.dialogs.settings_dialog import SettingsDialog
 from ui.dialogs.bookmark_dialog import BookmarkDialog
 from ui.dialogs.go_to import GoToDialog, GoToStyle
