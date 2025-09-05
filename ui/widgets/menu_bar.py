@@ -391,6 +391,7 @@ class MenuBar(QMenuBar):
         go_to_dialog.set_spin_label(spin_label)
         go_to_dialog.set_combo_label(combo_label)
         go_to_dialog.checkbox_field.setText("تشغيل الآية تلقائيًا")
+        go_to_dialog.checkbox_field.setChecked(Config.listening.auto_play_ayah_after_go_to)
 
         min_surah_number = min(combo_data.keys())
         max_surah_number = max(combo_data.keys())
