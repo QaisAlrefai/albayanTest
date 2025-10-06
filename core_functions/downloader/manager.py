@@ -6,7 +6,9 @@ from PyQt6.QtCore import QObject, QThreadPool, pyqtSignal
 from .worker import DownloadWorker
 from .status import DownloadStatus, DownloadProgress
 from .db import DownloadDB
+from utils.logger import LoggerManager
 
+logger = LoggerManager.get_logger(__name__)
 
 class DownloaderManager(QObject):
     download_progress = pyqtSignal(DownloadProgress)
@@ -22,6 +24,7 @@ class DownloaderManager(QObject):
         download_db: Optional[DownloadDB] = None,
     ):
         super().__init__()
+        logger.debug("Initializing DownloaderManager")
         self.save_history = save_history
         self.pool = QThreadPool.globalInstance()
         self.pool.setMaxThreadCount(max_workers)
@@ -36,9 +39,16 @@ class DownloaderManager(QObject):
         if load_history and self.db:
             self._load_history()
 
+        logger.debug("DownloaderManager initialized with max_workers=%d, load_history=%s, save_history=%s", max_workers, load_history, save_history)
+
     def _load_history(self):
+        """Load download history from the database."""
+        logger.debug("Loading download history from database")
+
         if not self.db:
+            logger.warning("No database instance available to load history.")
             return
+        
         for item in self.db.all():
             self._downloads[item.id] = {
                 "id": item.id,
@@ -51,8 +61,11 @@ class DownloaderManager(QObject):
                 "file_hash": item.file_hash,
             }
 
+        logger.info("Loaded %d download items from history", len(self._downloads))
+
     def add_new_downloads(self, download_items: List[Dict], download_folder: str):
         """Add multiple download items."""
+        logger.debug("Adding new download items, count=%d", len(download_items))
 
         if not isinstance(download_items, list):
             raise ValueError("download_items must be a list of dictionaries.")
@@ -75,17 +88,23 @@ class DownloaderManager(QObject):
 
             item_data["id"] = download_id
             self._downloads[download_id] = item_data
+        logger.info("Added %d new download items", len(download_items))
 
     def add_download(self, url: str, download_folder: str, **extra_data):
         """
         Add a single download item.
         Optionally accepts extra_data like metadata to be stored with the download.
         """
+        logger.debug("Adding single download item: %s", url)
         item = {"url": url}
         item.update(extra_data)
         self.add_new_downloads([item], download_folder)
+        logger.info("Added download item: %s", url)
 
     def start(self):
+        """Start processing the download queue."""
+        logger.info("Starting downloading process")
+
         for download_id, info in self._downloads.items():
             if info["status"] in (DownloadStatus.COMPLETED, DownloadStatus.CANCELLED):
                 continue
@@ -114,33 +133,42 @@ class DownloaderManager(QObject):
             self.db.update_status(download_id, new_status)
 
     def _on_error(self, download_id: int, message: str):
+        logger.error("Download error (ID: %d): %s", download_id, message)
         self.error.emit(download_id, message)
 
     def _on_finished(self, download_id: int, filename: str):
+        logger.debug("Download finished (ID: %d): %s", download_id, filename)
         self.download_finished.emit(download_id, filename)
+
     def pause(self, download_id: int):
+        logger.debug("Pausing download ID: %d", download_id)
         if worker := self._downloads.get(download_id, {}).get("worker"):
             worker.pause()
 
     def resume(self, download_id: int):
+        logger.debug("Resuming download ID: %d", download_id)
         if worker := self._downloads.get(download_id, {}).get("worker"):
             worker.resume()
 
     def cancel(self, download_id: int):
+        logger.debug("Cancelling download ID: %d", download_id)
         if worker := self._downloads.get(download_id, {}).get("worker"):
             worker.cancel()
 
     def pause_all(self):
+        logger.info("Pausing all downloads")
         self._pause_all = True
         for download_id in self._downloads:
             self.pause(download_id)
 
     def resume_all(self):
+        logger.info("Resuming all downloads")
         self._pause_all = False
         for download_id in self._downloads:
             self.resume(download_id)
 
     def cancel_all(self):
+        logger.info("Cancelling all downloads")
         self._cancel_all = True
         for download_id in self._downloads:
             self.cancel(download_id)
