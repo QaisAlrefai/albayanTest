@@ -1,6 +1,6 @@
 
 import os
-from typing import List, Dict, Optional, Type
+from typing import List, Dict, Optional
 from PyQt6.QtCore import QObject, QThreadPool, pyqtSignal
 
 from .worker import DownloadWorker
@@ -16,20 +16,15 @@ class DownloaderManager(QObject):
 
     def __init__(
         self,
-        urls: Optional[List[str]] = None,
-        download_folder: str = "downloads",
         max_workers: int = 3,
         load_history: bool = False,
         save_history: bool = False,
         download_db: Optional[DownloadDB] = None,
     ):
         super().__init__()
-        self.urls = [urls ]if isinstance(urls, str) else urls or []
         self.save_history = save_history
-        self.download_folder = download_folder
         self.pool = QThreadPool.globalInstance()
         self.pool.setMaxThreadCount(max_workers)
-
         self._downloads: Dict[int, Dict] = {}
         self._pause_all = False
         self._cancel_all = False
@@ -40,9 +35,6 @@ class DownloaderManager(QObject):
 
         if load_history and self.db:
             self._load_history()
-
-        if self.urls:
-            self._add_new_downloads(self.urls)
 
     def _load_history(self):
         if not self.db:
@@ -59,34 +51,39 @@ class DownloaderManager(QObject):
                 "file_hash": item.file_hash,
             }
 
-    def _add_new_downloads(self, urls: List[str]):
-        for url in urls:
-            filename = os.path.basename(url)
-            folder = self.download_folder
+    def add_new_downloads(self, download_items: List[Dict], download_folder: str):
+        """Add multiple download items."""
+
+        if not isinstance(download_items, list):
+            raise ValueError("download_items must be a list of dictionaries.")
+
+        for entry in download_items:
+            filename = os.path.basename(entry["url"])
+            item_data = {
+                "filename": filename,
+                "folder_path": download_folder,
+                "status": DownloadStatus.PENDING,
+                "downloaded_bytes": 0,
+                "total_bytes": 0,
+                **entry,
+            }
 
             if self.db and self.save_history:
-                item_data = {
-                    "url": url,
-                    "filename": filename,
-                    "folder_path": folder,
-                    "status": DownloadStatus.PENDING,
-                    "downloaded_bytes": 0,
-                    "total_bytes": 0
-                }
                 download_id = self.db.upsert(item_data)
             else:
                 download_id = len(self._downloads) + 1
 
-            self._downloads[download_id] = {
-                "id": download_id,
-                "url": url,
-                "filename": filename,
-                "folder_path": folder,
-                "status": DownloadStatus.PENDING,
-                "downloaded_bytes": 0,
-                "total_bytes": 0,
-                "file_hash": None,
-            }
+            item_data["id"] = download_id
+            self._downloads[download_id] = item_data
+
+    def add_download(self, url: str, download_folder: str, **extra_data):
+        """
+        Add a single download item.
+        Optionally accepts extra_data like metadata to be stored with the download.
+        """
+        item = {"url": url}
+        item.update(extra_data)
+        self.add_new_downloads([item], download_folder)
 
     def start(self):
         for download_id, info in self._downloads.items():
