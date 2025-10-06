@@ -95,7 +95,8 @@ class UpdateDialog(QDialog):
         self.progress_dialog.canceled.connect(self.on_cancel)
         self.progress_dialog.show()
 
-        self.downloader = DownloaderManager(self.download_url, download_folder=temp_folder)
+        self.downloader = DownloaderManager()
+        self.downloader.add_download(self.download_url, temp_folder)
         self.downloader.download_progress.connect(self.on_download_progress)
         self.downloader.download_finished.connect(self.on_download_finished)
         self.downloader.start()
