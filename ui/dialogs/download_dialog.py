@@ -125,22 +125,19 @@ class DownloadManagerDialog(QDialog):
         manager = self.current_manager()
         download_id = self.list_widget.currentItem().data(Qt.ItemDataRole.UserRole)
         if download_id:
-            manager.cancel(download_id)
             manager.db.delete(download_id)
             self.update_list()
-
-    def delete_all(self):
-        manager = self.current_manager()
-        manager.cancel_all()
-        manager.db.delete_all()
-        self.update_list()
 
     def delete_current_status(self):
         manager = self.current_manager()
         status = self.filter_combo.currentData()
-        for download_item in manager.get_downloads(status):
-            manager.cancel(download_item['id'])
-            manager.db.delete(download_item['id'])
+        manager.delete_by_status(status)
+        self.update_list()
+
+    def delete_all(self):
+        manager = self.current_manager()
+        manager.delete_all()
+        self.update_list()
 
     def show_delete_menu(self):
         menu = QMenu(self)
