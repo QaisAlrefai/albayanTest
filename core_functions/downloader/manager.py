@@ -1,6 +1,6 @@
 
 import os
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 from PyQt6.QtCore import QObject, QThreadPool, pyqtSignal
 
 from .worker import DownloadWorker
@@ -173,13 +173,26 @@ class DownloadManager(QObject):
         for download_id in self._downloads:
             self.cancel(download_id)
 
-    def get_download_map(self) -> Dict[int, Dict]:
-        return {
-            download_id: {
-                "url": data["url"],
-                "filename": data["filename"],
-                "folder_path": data["folder_path"],
-                "status": data["status"]
-            }
-            for download_id, data in self._downloads.items()
-        }
+    def get_downloads(
+        self,
+        status: Optional[Union[DownloadStatus, List[DownloadStatus]]] = None
+    ) -> List[Dict]:
+        """
+        Return a list of downloads filtered by status.
+        - If `status` is None → return all downloads.
+        - If `status` is a single DownloadStatus → return matching downloads.
+        - If `status` is a list → return downloads matching any of the statuses.
+        """
+        if status is None:
+            logger.debug("Fetching all downloads (no status filter applied)")
+            return list(self._downloads.values())
+
+        if not isinstance(status, list):
+            status = [status]
+
+        logger.debug("Fetching downloads with statuses: %s", [s.name for s in status])
+        return [
+            info
+            for info in self._downloads.values()
+            if info["status"] in status
+        ]
