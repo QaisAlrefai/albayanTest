@@ -2,7 +2,7 @@
 import time
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Dict, Optional
 
 
 class DownloadStatus(Enum):
@@ -12,6 +12,21 @@ class DownloadStatus(Enum):
     CANCELLED = "cancelled"
     COMPLETED = "completed"
     ERROR = "error"
+
+    _ignore_ = ['_labels_ar']
+
+    _labels_ar = {
+        PENDING: "قيد الانتظار",
+        DOWNLOADING: "جاري التنزيل",
+        PAUSED: "متوقف مؤقتًا",
+        CANCELLED: "تم الإلغاء",
+        COMPLETED: "مكتمل",
+        ERROR: "خطأ"
+    }
+
+    @property
+    def label(self) -> str:
+        return self._labels_ar.get(self.value, self.name)
 
 
 @dataclass
