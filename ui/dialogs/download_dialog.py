@@ -9,7 +9,7 @@ from typing import List
 from enum import Enum
 from core_functions.quran.types import Surah
 from core_functions.Reciters import RecitersManager, AyahReciter, SurahReciter
-from core_functions.downloader.manager import DownloadManager
+from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
 
 
@@ -19,38 +19,59 @@ class DownloadMode(Enum):
 
  
 class DownloadManagerDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(
+        self,
+        parent,
+        surah_manager: DownloadManager,
+        ayah_manager: DownloadManager,
+    ):
         super().__init__(parent)
         self.parent = parent
+        self.surah_manager = surah_manager
+        self.ayah_manager = ayah_manager
+
         self.setWindowTitle("مدير التنزيلات")
+        self.setMinimumWidth(500)
 
         layout = QVBoxLayout()
 
+        # === Top Controls ===
         top_layout = QHBoxLayout()
+
         self.search_box = QLineEdit()
         self.search_box.setPlaceholderText("بحث...")
-        self.search_box.setAccessibleName("مربع البحث")
 
+        self.section_label = QLabel("القسم:")
+        self.section_combo = QComboBox()
+        for download_manager, section in [
+            (self.surah_manager, "السور"),
+            (self.ayah_manager, "الآيات"),
+        ]:
+            if download_manager is not None:
+                self.section_combo.addItem(section, download_manager)
+        self.section_combo.currentIndexChanged.connect(self.update_list)
+        self.section_combo.setAccessibleName(self.section_label.text())
+
+        self.filter_label = QLabel("تصفية:")
         self.filter_combo = QComboBox()
         self.filter_combo.addItems(["الكل", "قيد التنزيل", "المكتمل"])
-        self.filter_combo.setAccessibleName("فلتر العرض")
+        self.filter_combo.setAccessibleName(self.filter_label.text())
+        self.filter_combo.currentIndexChanged.connect(self.update_list)
 
         top_layout.addWidget(self.search_box)
+        top_layout.addWidget(self.section_label)
+        top_layout.addWidget(self.section_combo)
+        top_layout.addWidget(self.filter_label)
         top_layout.addWidget(self.filter_combo)
         layout.addLayout(top_layout)
 
+        # === Downloads List ===
         self.list_widget = QListWidget()
-        self.list_widget.setAccessibleName("قائمة العناصر")
-        self.list_widget.addItems([
-            "عنصر 1 - مكتمل",
-            "عنصر 2 - قيد التنزيل",
-            "عنصر 3 - مكتمل",
-            "عنصر 4 - قيد التنزيل"
-        ])
         self.list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.list_widget.customContextMenuRequested.connect(self.show_context_menu)
         layout.addWidget(self.list_widget)
 
+        # === Buttons ===
         btn_layout = QHBoxLayout()
         self.btn_download = QPushButton("تنزيل")
         self.btn_delete = QPushButton("حذف")
@@ -67,52 +88,70 @@ class DownloadManagerDialog(QDialog):
 
         self.setLayout(layout)
 
+        # Load initial data
+        self.update_list()
+
+    def current_manager(self) -> DownloadManager:
+        return self.section_combo.currentData()
+
+    def update_list(self):
+        """Refresh the list view based on section and filter."""
+        manager = self.current_manager()
+        self.list_widget.clear()
+
+        downloads = manager.get_download_map()
+        filter_mode = self.filter_combo.currentText()
+
+        for _, item in downloads.items():
+            status_str = item["status"].name
+            display = f"{item['filename']} - {status_str}"
+            if filter_mode == "الكل" or \
+               (filter_mode == "قيد التنزيل" and item["status"] == DownloadStatus.DOWNLOADING) or \
+               (filter_mode == "المكتمل" and item["status"] == DownloadStatus.COMPLETED):
+                self.list_widget.addItem(display)
+
+    # -----------------------------------------------------
+    # Context Menu
+    # -----------------------------------------------------
     def show_context_menu(self, pos):
         menu = QMenu(self)
         delete_action = menu.addAction("حذف العنصر المحدد")
         delete_action.triggered.connect(self.delete_selected_item)
-
-        download_menu = menu.addMenu("تنزيل")
-        download_menu.addAction("تنزيل سور", self.open_download_surahs)
-        download_menu.addAction("تنزيل آيات", self.open_download_verses)
-
         menu.exec(self.list_widget.mapToGlobal(pos))
 
     def delete_selected_item(self):
         current_row = self.list_widget.currentRow()
         if current_row >= 0:
             self.list_widget.takeItem(current_row)
+            # هنا يمكنك لاحقًا ربط عملية الحذف فعليًا بالمدير
 
     def show_delete_menu(self):
         menu = QMenu(self)
         menu.addAction("حذف الكل", self.delete_all)
-        menu.addAction("حذف المكتمل", lambda: self.delete_by_filter("المكتمل"))
-        menu.addAction("حذف غير المكتمل", lambda: self.delete_by_filter("قيد التنزيل"))
+        menu.addAction("حذف المكتمل", lambda: self.delete_by_status(DownloadStatus.COMPLETED))
+        menu.addAction("حذف غير المكتمل", lambda: self.delete_by_status(DownloadStatus.DOWNLOADING))
         menu.exec(self.btn_delete.mapToGlobal(self.btn_delete.rect().bottomLeft()))
 
     def delete_all(self):
-        self.list_widget.clear()
+        manager = self.current_manager()
+        manager.cancel_all()
+        self.update_list()
 
-    def delete_by_filter(self, filter_text):
-        for i in reversed(range(self.list_widget.count())):
-            item_text = self.list_widget.item(i).text()
-            if filter_text in item_text:
-                self.list_widget.takeItem(i)
+    def delete_by_status(self, status: DownloadStatus):
+        manager = self.current_manager()
+        for download_id, data in manager.get_download_map().items():
+            if data["status"] == status:
+                manager.cancel(download_id)
+        self.update_list()
 
+    # -----------------------------------------------------
+    # Download Menu
+    # -----------------------------------------------------
     def show_download_menu(self):
         menu = QMenu(self)
-        menu.addAction("تنزيل سور", self.open_download_surahs)
-        menu.addAction("تنزيل آيات", self.open_download_verses)
+        menu.addAction("تنزيل سور")
+        menu.addAction("تنزيل آيات")
         menu.exec(self.btn_download.mapToGlobal(self.btn_download.rect().bottomLeft()))
-
-    def open_download_surahs(self):
-        dlg = DownloadSurahsDialog(self)
-        dlg.exec()
-
-    def open_download_verses(self):
-        dlg = DownloadVersesDialog(self)
-        dlg.exec()
-
 
 
 class NewDownloadDialog(QDialog):

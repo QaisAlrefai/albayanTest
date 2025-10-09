@@ -1,5 +1,5 @@
-from .manager import DownloaderManager
+from .manager import DownloadManager
 
 __all__ = [
-    "DownloaderManager"
+    "DownloadManager"
     ]
