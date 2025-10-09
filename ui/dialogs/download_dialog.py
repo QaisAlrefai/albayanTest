@@ -128,9 +128,8 @@ class DownloadManagerDialog(QDialog):
             manager.db.delete(download_id)
             self.update_list()
 
-    def delete_current_status(self):
+    def delete_by_status(self, status: DownloadStatus):
         manager = self.current_manager()
-        status = self.filter_combo.currentData()
         manager.delete_by_status(status)
         self.update_list()
 
@@ -143,7 +142,7 @@ class DownloadManagerDialog(QDialog):
         menu = QMenu(self)
         menu.addAction("حذف الكل", self.delete_all)
         menu.addAction("حذف المكتمل", lambda: self.delete_by_status(DownloadStatus.COMPLETED))
-        menu.addAction("حذف غير المكتمل", lambda: self.delete_by_status(DownloadStatus.DOWNLOADING))
+        menu.addAction("حذف غير المكتمل", lambda: self.delete_by_status([DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED, DownloadStatus.CANCELLED, DownloadStatus.ERROR]))
         menu.exec(self.btn_delete.mapToGlobal(self.btn_delete.rect().bottomLeft()))
 
     def show_download_menu(self):
