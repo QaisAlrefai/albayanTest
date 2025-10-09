@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QKeySequence, QShortcut
-from core_functions.downloader import DownloaderManager
+from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadProgress
 from ui.widgets.qText_edit import ReadOnlyTextEdit
 from utils.const import program_name, temp_folder
@@ -95,7 +95,7 @@ class UpdateDialog(QDialog):
         self.progress_dialog.canceled.connect(self.on_cancel)
         self.progress_dialog.show()
 
-        self.downloader = DownloaderManager()
+        self.downloader = DownloadManager()
         self.downloader.add_download(self.download_url, temp_folder)
         self.downloader.download_progress.connect(self.on_download_progress)
         self.downloader.download_finished.connect(self.on_download_finished)

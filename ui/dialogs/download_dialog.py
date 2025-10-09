@@ -1,11 +1,16 @@
+
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton, QLabel, QGridLayout, QLineEdit, QListWidget, QMenu
+    QDialog, QVBoxLayout, QHBoxLayout, QComboBox, 
+    QPushButton, QLabel, QGridLayout, QLineEdit, 
+    QListWidget, QMenu
 )
 from PyQt6.QtCore import Qt
 from typing import List
 from enum import Enum
 from core_functions.quran.types import Surah
 from core_functions.Reciters import RecitersManager, AyahReciter, SurahReciter
+from core_functions.downloader.manager import DownloadManager
+from core_functions.downloader.status import DownloadStatus, DownloadProgress
 
 
 class DownloadMode(Enum):
@@ -14,14 +19,13 @@ class DownloadMode(Enum):
 
  
 class DownloadManagerDialog(QDialog):
-    def __init__(self, parent=None):  # أضف parent كخيار
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
-        self.setAccessibleName("نافذة إدارة التنزيلات")
+        self.setWindowTitle("مدير التنزيلات")
 
         layout = QVBoxLayout()
 
-        # مربع البحث + الفلتر
         top_layout = QHBoxLayout()
         self.search_box = QLineEdit()
         self.search_box.setPlaceholderText("بحث...")
@@ -35,7 +39,6 @@ class DownloadManagerDialog(QDialog):
         top_layout.addWidget(self.filter_combo)
         layout.addLayout(top_layout)
 
-        # القائمة
         self.list_widget = QListWidget()
         self.list_widget.setAccessibleName("قائمة العناصر")
         self.list_widget.addItems([
@@ -48,7 +51,6 @@ class DownloadManagerDialog(QDialog):
         self.list_widget.customContextMenuRequested.connect(self.show_context_menu)
         layout.addWidget(self.list_widget)
 
-        # الأزرار
         btn_layout = QHBoxLayout()
         self.btn_download = QPushButton("تنزيل")
         self.btn_delete = QPushButton("حذف")
@@ -110,6 +112,8 @@ class DownloadManagerDialog(QDialog):
     def open_download_verses(self):
         dlg = DownloadVersesDialog(self)
         dlg.exec()
+
+
 
 class NewDownloadDialog(QDialog):
     """Dialog for downloading Surahs or Ayahs."""

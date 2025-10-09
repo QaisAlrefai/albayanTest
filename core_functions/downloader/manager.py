@@ -10,7 +10,7 @@ from utils.logger import LoggerManager
 
 logger = LoggerManager.get_logger(__name__)
 
-class DownloaderManager(QObject):
+class DownloadManager(QObject):
     download_progress = pyqtSignal(DownloadProgress)
     download_finished = pyqtSignal(int, str)                      # id, file_path
     error = pyqtSignal(int, str)                         # id, error message
