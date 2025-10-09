@@ -5,7 +5,7 @@ from enum import Enum
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QComboBox, 
     QPushButton, QLabel, QGridLayout, QLineEdit, 
-    QListWidget, QMenu
+    QListWidget, QListWidgetItem, QMenu
 )
 from PyQt6.QtCore import Qt
 
@@ -13,6 +13,9 @@ from core_functions.quran.types import Surah
 from core_functions.Reciters import RecitersManager, AyahReciter, SurahReciter
 from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
+from utils.logger import LoggerManager
+
+logger = LoggerManager.get_logger(__name__)
 
 
 class DownloadMode(Enum):
@@ -103,20 +106,15 @@ class DownloadManagerDialog(QDialog):
         manager = self.current_manager()
         self.list_widget.clear()
 
-        downloads = manager.get_download_map()
-        filter_mode = self.filter_combo.currentText()
+        status = self.filter_combo.currentData()
+        downloads = manager.get_downloads(status)
 
-        for _, item in downloads.items():
-            status_str = item["status"].name
-            display = f"{item['filename']} - {status_str}"
-            if filter_mode == "الكل" or \
-               (filter_mode == "قيد التنزيل" and item["status"] == DownloadStatus.DOWNLOADING) or \
-               (filter_mode == "المكتمل" and item["status"] == DownloadStatus.COMPLETED):
-                self.list_widget.addItem(display)
+        for  download_item in downloads:
+            display_text = f"{download_item['name']} - {download_item['status'].label}"
+            item = QListWidgetItem(display_text)
+            item.setData(Qt.ItemDataRole.UserRole, download_item['id'])
+            self.list_widget.addItem(item)
 
-    # -----------------------------------------------------
-    # Context Menu
-    # -----------------------------------------------------
     def show_context_menu(self, pos):
         menu = QMenu(self)
         delete_action = menu.addAction("حذف العنصر المحدد")
@@ -124,10 +122,25 @@ class DownloadManagerDialog(QDialog):
         menu.exec(self.list_widget.mapToGlobal(pos))
 
     def delete_selected_item(self):
-        current_row = self.list_widget.currentRow()
-        if current_row >= 0:
-            self.list_widget.takeItem(current_row)
-            # هنا يمكنك لاحقًا ربط عملية الحذف فعليًا بالمدير
+        manager = self.current_manager()
+        download_id = self.list_widget.currentItem().data(Qt.ItemDataRole.UserRole)
+        if download_id:
+            manager.cancel(download_id)
+            manager.db.delete(download_id)
+            self.update_list()
+
+    def delete_all(self):
+        manager = self.current_manager()
+        manager.cancel_all()
+        manager.db.delete_all()
+        self.update_list()
+
+    def delete_current_status(self):
+        manager = self.current_manager()
+        status = self.filter_combo.currentData()
+        for download_item in manager.get_downloads(status):
+            manager.cancel(download_item['id'])
+            manager.db.delete(download_item['id'])
 
     def show_delete_menu(self):
         menu = QMenu(self)
@@ -136,21 +149,6 @@ class DownloadManagerDialog(QDialog):
         menu.addAction("حذف غير المكتمل", lambda: self.delete_by_status(DownloadStatus.DOWNLOADING))
         menu.exec(self.btn_delete.mapToGlobal(self.btn_delete.rect().bottomLeft()))
 
-    def delete_all(self):
-        manager = self.current_manager()
-        manager.cancel_all()
-        self.update_list()
-
-    def delete_by_status(self, status: DownloadStatus):
-        manager = self.current_manager()
-        for download_id, data in manager.get_download_map().items():
-            if data["status"] == status:
-                manager.cancel(download_id)
-        self.update_list()
-
-    # -----------------------------------------------------
-    # Download Menu
-    # -----------------------------------------------------
     def show_download_menu(self):
         menu = QMenu(self)
         menu.addAction("تنزيل سور")

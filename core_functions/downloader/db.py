@@ -55,3 +55,14 @@ class DownloadDB:
             except SQLAlchemyError as e:
                 logger.error(f"Error deleting download item with id {download_id}: {e}")
                 session.rollback()
+
+    def delete_all(self):
+        logger.debug("Deleting all download items")
+        with self.Session() as session:
+            try:
+                num_deleted = session.query(self.download_table).delete()
+                session.commit()
+                logger.info(f"All download items deleted successfully. Total deleted: {num_deleted}")
+            except SQLAlchemyError as e:
+                logger.error(f"Error deleting all download items: {e}")
+                session.rollback()
