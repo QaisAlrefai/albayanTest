@@ -173,6 +173,30 @@ class DownloadManager(QObject):
         for download_id in self._downloads:
             self.cancel(download_id)
 
+    def delete(self, download_id: int):
+        logger.debug("Deleting download ID: %d", download_id)
+        if download_id in self._downloads:
+            if worker := self._downloads[download_id].get("worker"):
+                worker.cancel()
+            if self.db and self.save_history:
+                self.db.delete(download_id)
+            del self._downloads[download_id]
+            logger.info("Deleted download ID: %d", download_id)
+        else:
+            logger.warning("Attempted to delete non-existent download ID: %d", download_id)
+
+    def delete_by_status(self, status: DownloadStatus):
+        logger.info("Deleting downloads with status: %s", status.name)
+        for download_item in self.get_downloads(status):
+            self.delete(download_item["id"])
+        logger.info("Deleted downloads with status: %s", status.name)
+
+    def delete_all(self):
+        logger.debug("Deleting all downloads")
+        self.db.delete_all()
+        self._downloads.clear()
+        logger.info("All downloads deleted")
+
     def get_downloads(
         self,
         status: Optional[Union[DownloadStatus, List[DownloadStatus]]] = None
