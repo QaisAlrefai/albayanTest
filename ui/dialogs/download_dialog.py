@@ -56,6 +56,7 @@ class DownloadManagerDialog(QDialog):
 
         self.filter_label = QLabel("تصفية:")
         self.filter_combo = QComboBox()
+        self.filter_combo.addItem("الكل", None)
         for status in DownloadStatus:
             self.filter_combo.addItem(status.label, status)
         self.filter_combo.setAccessibleName(self.filter_label.text())
