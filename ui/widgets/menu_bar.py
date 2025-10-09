@@ -1,4 +1,4 @@
-from logging import config
+
 import os
 from PyQt6.QtWidgets import QApplication, QMenuBar, QMenu, QMessageBox
 from PyQt6.QtGui import QIcon, QAction, QKeySequence, QShortcut, QDesktopServices, QActionGroup
@@ -10,12 +10,16 @@ from ui.dialogs.athkar_dialog import AthkarDialog
 from ui.dialogs.download_dialog import DownloadManagerDialog
 from ui.sura_player_ui import SuraPlayerWindow
 from ui.dialogs.tasbih_dialog import TasbihDialog
+
 from core_functions.quran.types import NavigationMode
 from core_functions.tafaseer import Category
+from core_functions.downloader import DownloadDB, DownloadManager
+from core_functions.downloader.models import DownloadAyahs, DownloadSurahs
+
 from utils.update import UpdateManager
 from utils.settings import Config
 from utils.logger import LoggerManager
-from utils.const import albayan_folder, program_name, program_version, website, Globals
+from utils.const import albayan_folder, program_name, program_version, website, Globals, download_db_path
 from utils.audio_player import bass
 from theme import ThemeManager
 
@@ -280,7 +284,11 @@ class MenuBar(QMenuBar):
 
     def open_download_manager(self):
         logger.debug("Opening Download Manager dialog.")
-        download_dialog = DownloadManagerDialog(self.parent)
+        ayah_db = DownloadDB(f"sqlite:///{download_db_path}", DownloadAyahs)
+        ayah_manager = DownloadManager(download_db=ayah_db, load_history=True, save_history=True)
+        surah_db = DownloadDB(f"sqlite:///{download_db_path}", DownloadSurahs)
+        surah_manager = DownloadManager(download_db=surah_db, load_history=True, save_history=True)
+        download_dialog = DownloadManagerDialog(self.parent, surah_manager, ayah_manager)
         download_dialog.open()
         logger.debug("Download Manager dialog opened.")
 
