@@ -13,20 +13,20 @@ class DownloadStatus(Enum):
     COMPLETED = "completed"
     ERROR = "error"
 
-    _ignore_ = ['_labels_ar']
-
-    _labels_ar = {
-        PENDING: "قيد الانتظار",
-        DOWNLOADING: "جاري التنزيل",
-        PAUSED: "متوقف مؤقتًا",
-        CANCELLED: "تم الإلغاء",
-        COMPLETED: "مكتمل",
-        ERROR: "خطأ"
-    }
+    @property
+    def _labels_ar(self) -> Dict[str, str]:
+            return {
+            self.PENDING: "قيد الانتظار",
+            self.DOWNLOADING: "جاري التنزيل",
+            self.PAUSED: "متوقف مؤقتًا",
+            self.CANCELLED: "تم الإلغاء",
+            self.COMPLETED: "مكتمل",
+            self.ERROR: "خطأ"
+        }
 
     @property
     def label(self) -> str:
-        return self._labels_ar.get(self.value, self.name)
+        return self._labels_ar.get(self, self.name)
 
 
 @dataclass

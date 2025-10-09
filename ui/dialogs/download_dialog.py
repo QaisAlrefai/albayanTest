@@ -1,12 +1,14 @@
 
+from typing import List
+from enum import Enum
+
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QComboBox, 
     QPushButton, QLabel, QGridLayout, QLineEdit, 
     QListWidget, QMenu
 )
 from PyQt6.QtCore import Qt
-from typing import List
-from enum import Enum
+
 from core_functions.quran.types import Surah
 from core_functions.Reciters import RecitersManager, AyahReciter, SurahReciter
 from core_functions.downloader import DownloadManager
@@ -54,7 +56,8 @@ class DownloadManagerDialog(QDialog):
 
         self.filter_label = QLabel("تصفية:")
         self.filter_combo = QComboBox()
-        self.filter_combo.addItems(["الكل", "قيد التنزيل", "المكتمل"])
+        for status in DownloadStatus:
+            self.filter_combo.addItem(status.label, status)
         self.filter_combo.setAccessibleName(self.filter_label.text())
         self.filter_combo.currentIndexChanged.connect(self.update_list)
 
