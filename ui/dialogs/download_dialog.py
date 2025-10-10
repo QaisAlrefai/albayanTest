@@ -101,12 +101,15 @@ class DownloadManagerDialog(QDialog):
     def current_manager(self) -> DownloadManager:
         return self.section_combo.currentData()
 
+    def get_current_filter_status(self) -> DownloadStatus:
+        return self.filter_combo.currentData()
+
     def update_list(self):
         """Refresh the list view based on section and filter."""
         manager = self.current_manager()
         self.list_widget.clear()
 
-        status = self.filter_combo.currentData()
+        status = self.get_current_filter_status()
         downloads = manager.get_downloads(status)
 
         for  download_item in downloads:
