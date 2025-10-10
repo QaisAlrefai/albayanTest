@@ -43,6 +43,21 @@ class DownloadDB:
                 logger.error(f"Error fetching all download items: {e}")
                 return []
 
+    def update_status(self, download_id: str, new_status: int):
+        logger.debug(f"Updating status for download_id {download_id} to {new_status}")
+        with self.Session() as session:
+            try:
+                obj = session.query(self.download_table).filter_by(id=download_id).first()
+                if obj:
+                    obj.status = new_status
+                    session.commit()
+                    logger.info(f"Status for download_id {download_id} updated to {new_status}")
+                else:
+                    logger.warning(f"No download item found with id: {download_id}")
+            except SQLAlchemyError as e:
+                logger.error(f"Error updating status for download_id {download_id}: {e}")
+                session.rollback()
+
     def delete(self, download_id: str):
         logger.debug(f"Deleting download item with id: {download_id}")
         with self.Session() as session:
