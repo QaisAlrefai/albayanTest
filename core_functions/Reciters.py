@@ -47,7 +47,7 @@ class RecitersManager(ABC):
             cursor.execute(query)
             result = cursor.fetchall()
             logger.info(f"Fetched {len(result)} reciters from the database.")
-            return result
+            return [dict(row) for row in result]
  
     def get_reciter(self, id: int) -> dict:
         """Fetches a specific reciter by ID."""
@@ -89,6 +89,12 @@ class SurahReciter(RecitersManager):
     def __init__(self, db_path: str, table_name: str ="moshaf"):
         super().__init__(db_path, table_name)
 
+    def get_reciters(self):
+        reciters = super().get_reciters()
+        for reciter in reciters:
+            reciter["available_suras"] = sorted(map(int, reciter["available_suras"].split(",")))
+        return reciters
+    
     def get_reciter(self, id: int) -> dict:
         reciter_data = super().get_reciter(id)
         if reciter_data:

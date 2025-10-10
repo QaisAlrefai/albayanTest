@@ -169,13 +169,15 @@ class DownloadManagerDialog(QDialog):
                 for surah_number in range(from_surah.number, to_surah.number + 1)
                 ]
 
-            self.surah_manager.add_new_downloads(new_downloads, f"downloads/{reciter['id']}")
+            self.surah_manager.add_new_downloads(new_downloads, f"downloads/{reciter['name']}")
             self.update_list()
 
     def show_download_menu(self):
         menu = QMenu(self)
-        menu.addAction("تنزيل سور")
+        menu.addAction("تنزيل سور", self.download_surahs)
         menu.addAction("تنزيل آيات")
+        menu.setAccessibleName("قائمة تنزيل جديد")
+        menu.setActiveAction(menu.actions()[0])
         menu.exec(self.btn_download.mapToGlobal(self.btn_download.rect().bottomLeft()))
 
 
@@ -206,7 +208,7 @@ class NewDownloadDialog(QDialog):
         self.reciter_combo = QComboBox()
         self.reciter_combo.setAccessibleName(self.reciter_label.text())
         for reciter in self.reciters_manager.get_reciters():
-            self.reciter_combo.addItem(reciter["display_text"], reciter["id"])
+            self.reciter_combo.addItem(reciter["display_text"], reciter)
 
         grid.addWidget(self.reciter_label, 0, 0)
         grid.addWidget(self.reciter_combo, 0, 1)
@@ -290,7 +292,8 @@ class NewDownloadDialog(QDialog):
     def _populate_surahs(self, reciter, combo: QComboBox):
         """Fill Surah combo with only available Surahs for the selected reciter."""
         combo.clear()
-        available = set(reciter["available_surahs"])
+        print(reciter)
+        available = set(reciter["available_suras"])
         for sura in self.surahs:
             if sura.number in available:
                 combo.addItem(sura.name, sura)
