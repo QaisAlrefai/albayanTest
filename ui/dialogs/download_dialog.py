@@ -148,6 +148,8 @@ class DownloadManagerDialog(QDialog):
         menu.addAction("حذف الكل", self.delete_all)
         menu.addAction("حذف المكتمل", lambda: self.delete_by_status(DownloadStatus.COMPLETED))
         menu.addAction("حذف غير المكتمل", lambda: self.delete_by_status([DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED, DownloadStatus.CANCELLED, DownloadStatus.ERROR]))
+        menu.setAccessibleName("قائمة حذف")
+        menu.setActiveAction(menu.actions()[0])
         menu.exec(self.btn_delete.mapToGlobal(self.btn_delete.rect().bottomLeft()))
 
     def download_surahs(self):
