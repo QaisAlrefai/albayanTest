@@ -16,6 +16,7 @@ from core_functions.downloader.status import DownloadStatus, DownloadProgress
 
 from utils.logger import LoggerManager
 from utils.const import data_folder
+from utils.settings import Config
 
 logger = LoggerManager.get_logger(__name__)
 
@@ -171,7 +172,7 @@ class DownloadManagerDialog(QDialog):
                 for surah_number in range(from_surah.number, to_surah.number + 1)
                 ]
 
-            self.surah_manager.add_new_downloads(new_downloads, f"downloads/{reciter['name']}")
+            self.surah_manager.add_new_downloads(new_downloads, f"{Config.downloading.download_path}/{reciter['name']}")
             self.surah_manager.start()
             self.update_list()
 

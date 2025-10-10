@@ -285,9 +285,9 @@ class MenuBar(QMenuBar):
     def open_download_manager(self):
         logger.debug("Opening Download Manager dialog.")
         ayah_db = DownloadDB(f"sqlite:///{download_db_path}", DownloadAyahs)
-        ayah_manager = DownloadManager(download_db=ayah_db, load_history=True, save_history=True)
+        ayah_manager = DownloadManager(download_db=ayah_db, load_history=True, save_history=True, max_workers=Config.downloading.files_to_download_at_the_same_time)
         surah_db = DownloadDB(f"sqlite:///{download_db_path}", DownloadSurahs)
-        surah_manager = DownloadManager(download_db=surah_db, load_history=True, save_history=True)
+        surah_manager = DownloadManager(download_db=surah_db, load_history=True, save_history=True, max_workers=Config.downloading.files_to_download_at_the_same_time)
         download_dialog = DownloadManagerDialog(self.parent, surah_manager, ayah_manager)
         download_dialog.open()
         logger.debug("Download Manager dialog opened.")
