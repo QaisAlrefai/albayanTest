@@ -186,10 +186,10 @@ class DownloadManager(QObject):
             logger.warning("Attempted to delete non-existent download ID: %d", download_id)
 
     def delete_by_status(self, status: Union[DownloadStatus, List[DownloadStatus]]):
-        logger.info("Deleting downloads with status: %s", status.name)
+        logger.info("Deleting downloads with status: %s", status)
         for download_item in self.get_downloads(status):
             self.delete(download_item["id"])
-        logger.info("Deleted downloads with status: %s", status.name)
+        logger.info("Deleted downloads with status: %s", status)
 
     def delete_all(self):
         logger.debug("Deleting all downloads")

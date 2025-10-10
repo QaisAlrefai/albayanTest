@@ -61,6 +61,7 @@ class DownloadWorker(QRunnable):
                 downloaded_bytes=downloaded_bytes,
                 total_bytes=total_bytes
             )
+            last_percentage = progress.percentage
 
             self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
 
@@ -78,11 +79,13 @@ class DownloadWorker(QRunnable):
                     if chunk:
                         f.write(chunk)
                         downloaded_bytes += len(chunk)
+                        last_percentage = progress.percentage
                         progress.update(downloaded_bytes)
 
-                        self.callbacks["progress"](progress)
-                        self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
-
+                        if progress.percentage - last_percentage >= 1 or downloaded_bytes == total_bytes:
+                            self.callbacks["progress"](progress)
+                            self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
+                            
                         if self.db:
                             self.db.upsert({
                                 **self.item,

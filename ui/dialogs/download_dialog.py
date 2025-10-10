@@ -1,19 +1,17 @@
 
-from typing import List
+from typing import List, Dict, Optional
 from enum import Enum
-
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QComboBox, 
-    QPushButton, QLabel, QGridLayout, QLineEdit, 
-    QListWidget, QListWidgetItem, QMenu
+    QDialog, QVBoxLayout, QHBoxLayout, QComboBox,
+    QPushButton, QLabel, QLineEdit, QListWidget,
+    QListWidgetItem, QMenu, QGridLayout
 )
 from PyQt6.QtCore import Qt
 
 from core_functions.quran.types import Surah
-from core_functions.Reciters import RecitersManager, AyahReciter, SurahReciter
+from core_functions.Reciters import RecitersManager, SurahReciter, AyahReciter
 from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
-
 from utils.logger import LoggerManager
 from utils.const import data_folder
 from utils.settings import Config
@@ -25,48 +23,45 @@ class DownloadMode(Enum):
     SURAH = "surah"
     AYAH = "ayah"
 
- 
+
 class DownloadManagerDialog(QDialog):
-    def __init__(
-        self,
-        parent,
-        surah_manager: DownloadManager,
-        ayah_manager: DownloadManager,
-    ):
+    """Dialog to manage and monitor Quran downloads."""
+
+    def __init__(self, parent, surah_manager: DownloadManager, ayah_manager: DownloadManager):
         super().__init__(parent)
         self.parent = parent
         self.surah_manager = surah_manager
         self.ayah_manager = ayah_manager
+        self.item_map: Dict[str, QListWidgetItem] = {}
 
         self.setWindowTitle("مدير التنزيلات")
-        self.setMinimumWidth(500)
+        self.setMinimumWidth(520)
 
+        self._setup_ui()
+        self._connect_signals()
+        self.update_list()
+        
+
+    # === UI SETUP ===
+    def _setup_ui(self):
         layout = QVBoxLayout()
 
-        # === Top Controls ===
+        # === Top controls ===
         top_layout = QHBoxLayout()
-
         self.search_box = QLineEdit()
         self.search_box.setPlaceholderText("بحث...")
 
         self.section_label = QLabel("القسم:")
         self.section_combo = QComboBox()
-        for download_manager, section in [
-            (self.surah_manager, "السور"),
-            (self.ayah_manager, "الآيات"),
-        ]:
-            if download_manager is not None:
-                self.section_combo.addItem(section, download_manager)
-        self.section_combo.currentIndexChanged.connect(self.update_list)
-        self.section_combo.setAccessibleName(self.section_label.text())
+        for manager, label in [(self.surah_manager, "السور"), (self.ayah_manager, "الآيات")]:
+            if manager:
+                self.section_combo.addItem(label, manager)
 
         self.filter_label = QLabel("تصفية:")
         self.filter_combo = QComboBox()
         self.filter_combo.addItem("الكل", None)
         for status in DownloadStatus:
             self.filter_combo.addItem(status.label, status)
-        self.filter_combo.setAccessibleName(self.filter_label.text())
-        self.filter_combo.currentIndexChanged.connect(self.update_list)
 
         top_layout.addWidget(self.search_box)
         top_layout.addWidget(self.section_label)
@@ -75,10 +70,9 @@ class DownloadManagerDialog(QDialog):
         top_layout.addWidget(self.filter_combo)
         layout.addLayout(top_layout)
 
-        # === Downloads List ===
+        # === List Widget ===
         self.list_widget = QListWidget()
         self.list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.list_widget.customContextMenuRequested.connect(self.show_context_menu)
         layout.addWidget(self.list_widget)
 
         # === Buttons ===
@@ -87,10 +81,6 @@ class DownloadManagerDialog(QDialog):
         self.btn_delete = QPushButton("حذف")
         self.btn_close = QPushButton("إغلاق")
 
-        self.btn_download.clicked.connect(self.show_download_menu)
-        self.btn_delete.clicked.connect(self.show_delete_menu)
-        self.btn_close.clicked.connect(self.close)
-
         btn_layout.addWidget(self.btn_download)
         btn_layout.addWidget(self.btn_delete)
         btn_layout.addWidget(self.btn_close)
@@ -98,43 +88,81 @@ class DownloadManagerDialog(QDialog):
 
         self.setLayout(layout)
 
-        # Load initial data
-        self.update_list()
+    def _connect_signals(self):
+        self.section_combo.currentIndexChanged.connect(self.update_list)
+        self.filter_combo.currentIndexChanged.connect(self.update_list)
+        self.search_box.textChanged.connect(self.update_list)
+        self.list_widget.customContextMenuRequested.connect(self.show_context_menu)
+
+        self.btn_download.clicked.connect(self.show_download_menu)
+        self.btn_delete.clicked.connect(self.show_delete_menu)
+        self.btn_close.clicked.connect(self.close)
+        self.surah_manager.download_progress.connect(self.update_progress)
+        self.ayah_manager.download_progress.connect(self.update_progress)
 
     def current_manager(self) -> DownloadManager:
         return self.section_combo.currentData()
 
-    def get_current_filter_status(self) -> DownloadStatus:
+    def get_current_filter_status(self) -> Optional[DownloadStatus]:
         return self.filter_combo.currentData()
 
+    def update_progress(self, progress: DownloadProgress):
+        """Fast update for a specific item's progress."""
+        item = self.item_map.get(progress.download_id)
+        if not item:
+            return
+        progress_text = f"{progress.percentage}%"
+        base_text = item.text().rsplit(" - ", 2)[0]
+        item.setText(f"{base_text} - {progress_text}")
+
     def update_list(self):
-        """Refresh the list view based on section and filter."""
+        """Rebuild the visible list based on filters and search."""
         manager = self.current_manager()
+        if not manager:
+            return
+
         self.list_widget.clear()
+        self.item_map.clear()
 
         status = self.get_current_filter_status()
-        downloads = manager.get_downloads(status)
+        search_text = self.search_box.text().strip().lower()
 
-        for  download_item in downloads:
-            display_text = f"{download_item['filename']} - {download_item['status'].label}"
+        download_items = manager.get_downloads(status)
+
+        for item_data in download_items:
+            if search_text and search_text not in item_data["filename"].lower():
+                continue
+
+            progress = (
+                f"{(item_data['downloaded_bytes'] / item_data['total_bytes'] * 100):.1f}%"
+                if item_data["total_bytes"] > 0 else "0%"
+            )
+            display_text = f"{item_data['filename']} - {item_data['status'].label} - {progress}"
+
             item = QListWidgetItem(display_text)
-            item.setData(Qt.ItemDataRole.UserRole, download_item['id'])
+            item.setData(Qt.ItemDataRole.UserRole, item_data['id'])
             self.list_widget.addItem(item)
+            self.item_map[item_data['id']] = item
 
+    # === MENU ACTIONS ===
     def show_context_menu(self, pos):
         menu = QMenu(self)
-        delete_action = menu.addAction("حذف العنصر المحدد")
-        delete_action.triggered.connect(self.delete_selected_item)
+        action_delete = menu.addAction("حذف العنصر المحدد")
+        action_delete.triggered.connect(self.delete_selected_item)
         menu.exec(self.list_widget.mapToGlobal(pos))
 
     def delete_selected_item(self):
+        """Delete the currently selected download item."""
         manager = self.current_manager()
-        download_id = self.list_widget.currentItem().data(Qt.ItemDataRole.UserRole)
-        if download_id:
-            manager.db.delete(download_id)
-            self.update_list()
+        item = self.list_widget.currentItem()
+        if not item:
+            return
+        download_id = item.data(Qt.ItemDataRole.UserRole)
+        manager.db.delete(download_id)
+        self.list_widget.takeItem(self.list_widget.row(item))
+        self.item_map.pop(download_id, None)
 
-    def delete_by_status(self, status: DownloadStatus):
+    def delete_by_status(self, status):
         manager = self.current_manager()
         manager.delete_by_status(status)
         self.update_list()
@@ -148,7 +176,14 @@ class DownloadManagerDialog(QDialog):
         menu = QMenu(self)
         menu.addAction("حذف الكل", self.delete_all)
         menu.addAction("حذف المكتمل", lambda: self.delete_by_status(DownloadStatus.COMPLETED))
-        menu.addAction("حذف غير المكتمل", lambda: self.delete_by_status([DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED, DownloadStatus.CANCELLED, DownloadStatus.ERROR]))
+        menu.addAction(
+            "حذف غير المكتمل",
+            lambda: self.delete_by_status([
+                DownloadStatus.PENDING, DownloadStatus.DOWNLOADING,
+                DownloadStatus.PAUSED, DownloadStatus.CANCELLED,
+                DownloadStatus.ERROR
+            ])
+        )
         menu.setAccessibleName("قائمة حذف")
         menu.setActiveAction(menu.actions()[0])
         menu.exec(self.btn_delete.mapToGlobal(self.btn_delete.rect().bottomLeft()))
@@ -161,18 +196,20 @@ class DownloadManagerDialog(QDialog):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             selection = dialog.get_selection()
             reciter = selection["reciter"]
-            from_surah: Surah = selection["from_surah"]
-            to_surah: Surah = selection["to_surah"]
+            from_surah = selection["from_surah"]
+            to_surah = selection["to_surah"]
 
-            new_downloads = [{
-                "reciter_id": reciter["id"],
-                "surah_number": surah_number,
-                "url": reciters_manager.get_url(reciter["id"], surah_number),
-                } 
-                for surah_number in range(from_surah.number, to_surah.number + 1)
-                ]
+            new_downloads = [
+                {
+                    "reciter_id": reciter["id"],
+                    "surah_number": num,
+                    "url": reciters_manager.get_url(reciter["id"], num),
+                }
+                for num in range(from_surah.number, to_surah.number + 1)
+            ]
 
-            self.surah_manager.add_new_downloads(new_downloads, f"{Config.downloading.download_path}/{reciter['name']}")
+            path = f"{Config.downloading.download_path}/{reciter['name']}"
+            self.surah_manager.add_new_downloads(new_downloads, path)
             self.surah_manager.start()
             self.update_list()
 
