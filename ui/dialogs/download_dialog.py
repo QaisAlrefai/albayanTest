@@ -115,7 +115,7 @@ class DownloadManagerDialog(QDialog):
         downloads = manager.get_downloads(status)
 
         for  download_item in downloads:
-            display_text = f"{download_item['name']} - {download_item['status'].label}"
+            display_text = f"{download_item['filename']} - {download_item['status'].label}"
             item = QListWidgetItem(display_text)
             item.setData(Qt.ItemDataRole.UserRole, download_item['id'])
             self.list_widget.addItem(item)
@@ -164,12 +164,13 @@ class DownloadManagerDialog(QDialog):
             new_downloads = [{
                 "reciter_id": reciter["id"],
                 "surah_number": surah_number,
-                "url": reciters_manager.get_url(reciter["id"])
+                "url": reciters_manager.get_url(reciter["id"], surah_number),
                 } 
                 for surah_number in range(from_surah.number, to_surah.number + 1)
                 ]
 
             self.surah_manager.add_new_downloads(new_downloads, f"downloads/{reciter['name']}")
+            self.surah_manager.start()
             self.update_list()
 
     def show_download_menu(self):
@@ -263,6 +264,7 @@ class NewDownloadDialog(QDialog):
         # Control buttons
         btn_layout = QHBoxLayout()
         btn_download = QPushButton("تحميل")
+        btn_download.clicked.connect(self.accept)
         btn_close = QPushButton("إغلاق")
         btn_close.clicked.connect(self.close)
 
@@ -292,8 +294,8 @@ class NewDownloadDialog(QDialog):
     def _populate_surahs(self, reciter, combo: QComboBox):
         """Fill Surah combo with only available Surahs for the selected reciter."""
         combo.clear()
-        print(reciter)
         available = set(reciter["available_suras"])
+
         for sura in self.surahs:
             if sura.number in available:
                 combo.addItem(sura.name, sura)
