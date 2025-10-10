@@ -13,7 +13,9 @@ from core_functions.quran.types import Surah
 from core_functions.Reciters import RecitersManager, AyahReciter, SurahReciter
 from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
+
 from utils.logger import LoggerManager
+from utils.const import data_folder
 
 logger = LoggerManager.get_logger(__name__)
 
@@ -148,6 +150,28 @@ class DownloadManagerDialog(QDialog):
         menu.addAction("حذف غير المكتمل", lambda: self.delete_by_status([DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED, DownloadStatus.CANCELLED, DownloadStatus.ERROR]))
         menu.exec(self.btn_delete.mapToGlobal(self.btn_delete.rect().bottomLeft()))
 
+    def download_surahs(self):
+        reciters_manager = SurahReciter(data_folder / "quran" / "reciters.db")
+        surahs = self.parent.quran_manager.get_surahs()
+
+        dialog = NewDownloadDialog(self, DownloadMode.SURAH, surahs, reciters_manager)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            selection = dialog.get_selection()
+            reciter = selection["reciter"]
+            from_surah: Surah = selection["from_surah"]
+            to_surah: Surah = selection["to_surah"]
+
+            new_downloads = [{
+                "reciter_id": reciter["id"],
+                "surah_number": surah_number,
+                "url": reciters_manager.get_url(reciter["id"])
+                } 
+                for surah_number in range(from_surah.number, to_surah.number + 1)
+                ]
+
+            self.surah_manager.add_new_downloads(new_downloads, f"downloads/{reciter['id']}")
+            self.update_list()
+
     def show_download_menu(self):
         menu = QMenu(self)
         menu.addAction("تنزيل سور")
@@ -158,7 +182,13 @@ class DownloadManagerDialog(QDialog):
 class NewDownloadDialog(QDialog):
     """Dialog for downloading Surahs or Ayahs."""
 
-    def __init__(self, parent, mode: DownloadMode, surahs: List[Surah], reciters_manager: RecitersManager):
+    def __init__(
+            self, 
+            parent, 
+            mode:  DownloadMode, 
+            surahs: List[Surah],
+            reciters_manager: RecitersManager
+            ) -> None:
         super().__init__(parent)
         self.mode = mode
         self.surahs = surahs
