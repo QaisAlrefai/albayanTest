@@ -182,7 +182,7 @@ class DownloadManagerDialog(QDialog):
 
             progress = (
                 f"{(item_data['downloaded_bytes'] / item_data['total_bytes'] * 100):.1f}%, " if item_data["total_bytes"] > 0 else "0%, "
-            ) + f", الحجم {item_data['size_text']}"
+            ) + f", الحجم {item_data.get('size_text', 'غير معروف')}"
 
             reciter_display_text = self.current_reciters_manager.get_reciter(item_data["reciter_id"]).get("display_text", "قارئ غير معروف")
             display_text = f"{item_data['filename']}, {reciter_display_text}, {item_data['status'].label}"
