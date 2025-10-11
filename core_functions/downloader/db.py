@@ -34,7 +34,7 @@ class DownloadDB:
                 session.rollback()
                 return None
 
-    def all(self):
+    def all(self) -> list[DownloadTableBase]:
         logger.debug("Fetching all download items")
         with self.Session() as session:
             try:
@@ -42,6 +42,15 @@ class DownloadDB:
             except SQLAlchemyError as e:
                 logger.error(f"Error fetching all download items: {e}")
                 return []
+
+    def get(self, download_id: str) -> DownloadTableBase:
+        logger.debug(f"Fetching download item with id: {download_id}")
+        with self.Session() as session:
+            try:
+                return session.query(self.download_table).filter_by(id=download_id).first()
+            except SQLAlchemyError as e:
+                logger.error(f"Error fetching download item with id {download_id}: {e}")
+                return None
 
     def update_status(self, download_id: str, new_status: int):
         logger.debug(f"Updating status for download_id {download_id} to {new_status}")
