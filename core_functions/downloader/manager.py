@@ -52,7 +52,6 @@ class DownloadManager(QObject):
         for item in self.db.all():
             self._downloads[item.id] = {
                 "id": item.id,
-                "reciter_id": item.reciter_id,
                 "url": item.url,
                 "filename": item.filename,
                 "folder_path": item.folder_path,
@@ -61,6 +60,11 @@ class DownloadManager(QObject):
                 "total_bytes": item.total_bytes,
                 "file_hash": item.file_hash,
             }
+
+            # Include any additional fields that might exist in the DB model
+            other_keys = set(item.__dict__.keys())- set(self.db.download_table.__table__.c)
+            for key in other_keys:
+                self._downloads[item.id][key] = getattr(item, key)
 
         logger.info("Loaded %d download items from history", len(self._downloads))
 
