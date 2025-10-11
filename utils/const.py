@@ -19,6 +19,7 @@ logger.debug(f"Config path: {CONFIG_PATH}")
 LOG_PATH = os.path.join(albayan_folder, "albayan.log")
 logger.debug(f"Log path: {LOG_PATH}")
 data_folder = Path("database")
+reciters_db_path = data_folder / "quran/reciters.db"
 logger.debug(f"Data folder path: {data_folder}")
 
 

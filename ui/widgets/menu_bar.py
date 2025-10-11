@@ -15,11 +15,12 @@ from core_functions.quran.types import NavigationMode
 from core_functions.tafaseer import Category
 from core_functions.downloader import DownloadDB, DownloadManager
 from core_functions.downloader.models import DownloadAyahs, DownloadSurahs
+from core_functions.Reciters import SurahReciter, AyahReciter
 
 from utils.update import UpdateManager
 from utils.settings import Config
 from utils.logger import LoggerManager
-from utils.const import albayan_folder, program_name, program_version, website, Globals, download_db_path
+from utils.const import albayan_folder, program_name, program_version, website, Globals, download_db_path, reciters_db_path
 from utils.audio_player import bass
 from theme import ThemeManager
 
@@ -286,9 +287,11 @@ class MenuBar(QMenuBar):
         logger.debug("Opening Download Manager dialog.")
         ayah_db = DownloadDB(f"sqlite:///{download_db_path}", DownloadAyahs)
         ayah_manager = DownloadManager(download_db=ayah_db, load_history=True, save_history=True, max_workers=Config.downloading.files_to_download_at_the_same_time)
+        ayah_reciters = AyahReciter(reciters_db_path)
         surah_db = DownloadDB(f"sqlite:///{download_db_path}", DownloadSurahs)
         surah_manager = DownloadManager(download_db=surah_db, load_history=True, save_history=True, max_workers=Config.downloading.files_to_download_at_the_same_time)
-        download_dialog = DownloadManagerDialog(self.parent, surah_manager, ayah_manager)
+        surah_reciters = SurahReciter(reciters_db_path)
+        download_dialog = DownloadManagerDialog(self.parent, surah_manager, ayah_manager, surah_reciters, ayah_reciters)
         download_dialog.open()
         logger.debug("Download Manager dialog opened.")
 
