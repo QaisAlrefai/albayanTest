@@ -63,7 +63,7 @@ class DownloadManagerDialog(QDialog):
         self.section_label = QLabel("القسم:")
         self.section_combo = QComboBox()
         for manager, reciters_manager, label in [
-            (self.surah_manager, self.ayah_reciters, "السور"), 
+            (self.surah_manager, self.surah_reciters, "السور"), 
             (self.ayah_manager, self.ayah_reciters, "الآيات")
             ]:
             if manager:
@@ -147,10 +147,9 @@ class DownloadManagerDialog(QDialog):
             return
         text = item.text()
         if ", " in text:
-            filename = text.split(", ")[0]
-            new_text = f"{filename}, {status.label}"
+            base_text = ", ".join(text.split(", ")[:-1])
+            new_text = f"{base_text}, {status.label}"
             item.setText(new_text)
-
 
     def update_list(self):
         """Rebuild the visible list based on filters and search."""
@@ -173,7 +172,9 @@ class DownloadManagerDialog(QDialog):
                 f"{(item_data['downloaded_bytes'] / item_data['total_bytes'] * 100):.1f}%"
                 if item_data["total_bytes"] > 0 else "0%"
             )
-            display_text = f"{item_data['filename']}, {item_data['status'].label}"
+
+            reciter_display_text = self.current_reciters_manager.get_reciter(item_data["reciter_id"]).get("display_text", "قارئ غير معروف")
+            display_text = f"{item_data['filename']}, {reciter_display_text}, {item_data['status'].label}"
 
             item = QListWidgetItem(display_text)
             item.setData(Qt.ItemDataRole.UserRole, item_data['id'])

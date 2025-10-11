@@ -52,6 +52,7 @@ class DownloadManager(QObject):
         for item in self.db.all():
             self._downloads[item.id] = {
                 "id": item.id,
+                "reciter_id": item.reciter_id,
                 "url": item.url,
                 "filename": item.filename,
                 "folder_path": item.folder_path,

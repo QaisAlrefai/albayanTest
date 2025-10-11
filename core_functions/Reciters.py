@@ -54,7 +54,12 @@ class RecitersManager(ABC):
         logger.debug(f"Fetching reciter with ID: {id}")
         with self._connect() as conn:
             cursor = conn.cursor()
-            query = f"SELECT * FROM {self.table_name} WHERE id = ?;"
+            query = f"""
+            SELECT *, 
+            name || ' - ' || rewaya || ' - (' || type || ') - (' || bitrate || ' kbps)' AS display_text 
+            FROM {self.table_name}
+            WHERE id = ?;
+            """
             cursor.execute(query, (id,))
             result = cursor.fetchone()
             if result:
