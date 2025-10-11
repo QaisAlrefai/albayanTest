@@ -113,6 +113,7 @@ class DownloadManagerDialog(QDialog):
         self.ayah_manager.download_progress.connect(self.update_progress)
         self.surah_manager.status_changed.connect(self.update_status)
         self.ayah_manager.status_changed.connect(self.update_status)
+        #self.surah_manager.download_finished.connect(lambda id, fn: self.update_status(id, DownloadStatus.COMPLETED))
 
     @property
     def current_manager(self) -> DownloadManager:
@@ -151,6 +152,17 @@ class DownloadManagerDialog(QDialog):
             new_text = f"{base_text}, {status.label}"
             item.setText(new_text)
 
+    def on_finished(self, download_id: str):
+        """Handle when a download is finished."""
+        item = self.item_map.get(download_id)
+        if not item:
+            return
+        
+        download_item = self.current_manager.get_download(download_id)
+        text = f"100%, الحجم {download_item['size_text']}"
+        item.setData(Qt.ItemDataRole.AccessibleDescriptionRole, text)
+        item.setToolTip(text)
+
     def update_list(self):
         """Rebuild the visible list based on filters and search."""
         manager = self.current_manager
@@ -169,9 +181,8 @@ class DownloadManagerDialog(QDialog):
                 continue
 
             progress = (
-                f"{(item_data['downloaded_bytes'] / item_data['total_bytes'] * 100):.1f}%"
-                if item_data["total_bytes"] > 0 else "0%"
-            )
+                f"{(item_data['downloaded_bytes'] / item_data['total_bytes'] * 100):.1f}%, " if item_data["total_bytes"] > 0 else "0%, "
+            ) + f", الحجم {item_data['size_text']}"
 
             reciter_display_text = self.current_reciters_manager.get_reciter(item_data["reciter_id"]).get("display_text", "قارئ غير معروف")
             display_text = f"{item_data['filename']}, {reciter_display_text}, {item_data['status'].label}"

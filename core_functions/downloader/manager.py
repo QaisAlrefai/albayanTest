@@ -60,6 +60,7 @@ class DownloadManager(QObject):
                 "total_bytes": item.total_bytes,
                 "file_hash": item.file_hash,
             }
+            self._downloads[item.id]["size_text"] = size_text = f"{item.total_bytes / (1024 * 1024):.2f} MB" if item.total_bytes > 1024 * 1024 else f"{item.total_bytes / 1024:.2f} KB"
 
             # Include any additional fields that might exist in the DB model
             other_keys = set(item.__dict__.keys())- set(self.db.download_table.__table__.c)
@@ -201,6 +202,10 @@ class DownloadManager(QObject):
         self.db.delete_all()
         self._downloads.clear()
         logger.info("All downloads deleted")
+
+    def get_download(self, download_id: int) -> Optional[Dict]:
+        """Return the download item by ID, or None if not found."""
+        return self._downloads.get(download_id)
 
     def get_downloads(
         self,
