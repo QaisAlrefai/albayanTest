@@ -111,6 +111,8 @@ class DownloadManagerDialog(QDialog):
         self.btn_close.clicked.connect(self.close)
         self.surah_manager.download_progress.connect(self.update_progress)
         self.ayah_manager.download_progress.connect(self.update_progress)
+        self.surah_manager.status_changed.connect(self.update_status)
+        self.ayah_manager.status_changed.connect(self.update_status)
 
     @property
     def current_manager(self) -> DownloadManager:
@@ -137,6 +139,18 @@ class DownloadManagerDialog(QDialog):
 
         item.setData(Qt.ItemDataRole.AccessibleDescriptionRole, progress_text)
         item.setToolTip(progress_text)
+
+    def update_status(self, download_id: str, status: DownloadStatus):
+        """Update the status of a specific item."""
+        item = self.item_map.get(download_id)
+        if not item:
+            return
+        text = item.text()
+        if ", " in text:
+            filename = text.split(", ")[0]
+            new_text = f"{filename}, {status.label}"
+            item.setText(new_text)
+
 
     def update_list(self):
         """Rebuild the visible list based on filters and search."""
