@@ -111,9 +111,14 @@ class DownloadManagerDialog(QDialog):
         item = self.item_map.get(progress.download_id)
         if not item:
             return
-        progress_text = f"{progress.percentage}%"
-        base_text = item.text().rsplit(" - ", 2)[0]
-        item.setText(f"{base_text} - {progress_text}")
+        progress_text = (
+            f"{progress.percentage}%, "
+            f"تم تنزيل {progress.downloaded_str} من {progress.total_str}\n"
+            f"السرعة: {progress.speed_str} | الوقت المنقضي: {progress.elapsed_time_str} | الوقت المتبقي: {progress.remaining_time_str}"
+            )
+
+        item.setData(Qt.ItemDataRole.AccessibleDescriptionRole, progress_text)
+        item.setToolTip(progress_text)
 
     def update_list(self):
         """Rebuild the visible list based on filters and search."""
@@ -137,14 +142,15 @@ class DownloadManagerDialog(QDialog):
                 f"{(item_data['downloaded_bytes'] / item_data['total_bytes'] * 100):.1f}%"
                 if item_data["total_bytes"] > 0 else "0%"
             )
-            display_text = f"{item_data['filename']} - {item_data['status'].label} - {progress}"
+            display_text = f"{item_data['filename']}, {item_data['status'].label}"
 
             item = QListWidgetItem(display_text)
             item.setData(Qt.ItemDataRole.UserRole, item_data['id'])
+            item.setData(Qt.ItemDataRole.AccessibleDescriptionRole, progress)
+            item.setToolTip(progress)
             self.list_widget.addItem(item)
             self.item_map[item_data['id']] = item
 
-    # === MENU ACTIONS ===
     def show_context_menu(self, pos):
         menu = QMenu(self)
         action_delete = menu.addAction("حذف العنصر المحدد")
