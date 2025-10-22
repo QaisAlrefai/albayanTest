@@ -5,8 +5,8 @@ import os
 #set PYTHONPATH to the current directory
 current_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 os.chdir(current_dir)
-
-from utils.const import program_name, program_english_name, program_version, program_icon, user_db_path, CONFIG_PATH, LOG_PATH, dev_mode
+from utils.const import program_name, program_english_name, program_version, program_icon, dev_mode
+from utils.paths import paths
 from utils.settings import Config
 from utils.logger import LogLevel, LoggerManager
 
@@ -14,7 +14,7 @@ from utils.logger import LogLevel, LoggerManager
 Config.load_settings()
 #setup the logger
 LoggerManager.setup_logger(
-    log_file=LOG_PATH, 
+    log_file = paths.log_file, 
     log_level=LogLevel.from_name(Config.general.log_level),
     dev_mode=dev_mode
     )
