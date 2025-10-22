@@ -41,7 +41,8 @@ from ui.widgets.toolbar import AudioToolBar
 from utils.settings import Config
 from utils.universal_speech import UniversalSpeech
 from utils.user_data import PreferencesManager
-from utils.const import program_name, program_icon, user_db_path, data_folder, Globals
+from utils.const import program_name, program_icon, Globals
+from utils.paths import paths
 from utils.logger import LoggerManager
 from utils.audio_player import SoundEffectPlayer
 from exceptions.error_decorators import exception_handler
@@ -61,7 +62,7 @@ class QuranInterface(QMainWindow):
         )
         self.quran_manager.formatter_options.auto_page_turn = Config.reading.auto_page_turn
         self.quran_manager.formatter_options.marks_type = MarksType.from_int(Config.reading.marks_type)
-        self.preferences_manager = PreferencesManager(user_db_path)
+        self.preferences_manager = PreferencesManager(paths.user_db)
         self.sura_player_window = None
         Globals.effects_manager = SoundEffectPlayer("Audio/sounds")
 

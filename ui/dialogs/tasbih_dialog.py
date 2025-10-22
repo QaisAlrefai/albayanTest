@@ -7,7 +7,7 @@ from PyQt6.QtGui import QKeySequence, QShortcut, QAction
 import qtawesome as qta
 from core_functions.tasbih import TasbihController
 from core_functions.tasbih.model import TasbihEntry
-from utils.const import athkar_db_path
+from utils.paths import paths
 from utils.universal_speech import UniversalSpeech
 from utils.logger import LoggerManager
 
@@ -18,7 +18,7 @@ class TasbihDialog(QDialog):
     def __init__(self, parent) -> None:
         super().__init__(parent)
         logger.debug("Initializing TasbihDialog...")
-        self.controller = TasbihController(athkar_db_path)
+        self.controller = TasbihController(paths.athkar_db)
         self.setWindowTitle("المسبحة")
         self.resize(400, 400)
         

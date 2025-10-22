@@ -12,7 +12,8 @@ from PyQt6.QtWidgets import (
 from core_functions.Reciters import SurahReciter
 from .FilterManager import Item, FilterManager
 from utils.audio_player.audio_player_thread import AudioPlayerThread
-from utils.const import Globals, data_folder, user_db_path, program_name
+from utils.const import Globals, program_name
+from utils.paths import paths
 from utils.audio_player import SurahPlayer
 from utils.universal_speech import UniversalSpeech
 from utils.user_data import PreferencesManager
@@ -32,11 +33,11 @@ class SuraPlayerWindow(QMainWindow):
         self.setWindowTitle(f"{program_name} - مشغل القرآن")
         self.resize(600, 400)
         logger.debug("Loading preferences and initializing components.")
-        self.preferences_manager = PreferencesManager(user_db_path)
+        self.preferences_manager = PreferencesManager(paths.user_db)
         self.menubar = MenuBar(self)
         self.setMenuBar(self.menubar)
 
-        self.reciters = SurahReciter(data_folder / "quran" / "reciters.db")
+        self.reciters = SurahReciter(paths.data_folder / "quran" / "reciters.db")
         self.player = SurahPlayer()
         self.audio_player_thread = AudioPlayerThread(self.player, self)
         self.filter_manager = FilterManager()

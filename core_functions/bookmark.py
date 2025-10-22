@@ -3,14 +3,14 @@ import os
 import datetime
 from PyQt6.QtWidgets import QMessageBox
 from utils.logger import LoggerManager
-from utils.const import albayan_folder
+from utils.paths import paths
 
 logger = LoggerManager.get_logger(__name__)
 
 class BookmarkManager:
     def __init__(self) -> None:
         logger.debug("Initializing BookmarkManager...")
-        self.file_path = os.path.join(albayan_folder, "bookmark.db")
+        self.file_path = os.path.join(paths.app_folder, "bookmark.db")
         self.conn = self.connect()
         self.cursor = self.conn.cursor()
         self.create_table()

@@ -10,7 +10,8 @@ from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QKeySequence, QClipboard, QShortcut, QPixmap, QFontMetrics, QPainter, QFont
 from ui.widgets.qText_edit import ReadOnlyTextEdit
 from utils.universal_speech import UniversalSpeech
-from utils.const import albayan_documents_dir, Globals, data_folder
+from utils.const import Globals
+from utils.paths import paths
 from utils.logger import LoggerManager
 from exceptions.json import JSONFileNotFoundError, InvalidJSONFormatError
 from exceptions.error_decorators import exception_handler
@@ -111,7 +112,7 @@ class InfoDialog(QDialog):
 
     def choose_QuotesMessage(self):
         logger.debug("Choosing a random quote message...")
-        file_path = data_folder/"quotes/QuotesMessages.json"
+        file_path = paths.data_folder/"quotes/QuotesMessages.json"
         if not file_path.exists():
             logger.error(f"Quotes file not found: {file_path}")
             raise JSONFileNotFoundError(file_path)
@@ -139,7 +140,7 @@ class InfoDialog(QDialog):
         logger.debug("User triggered save as image action.")
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         options = QFileDialog.Options()
-        file_name = os.path.join(albayan_documents_dir, f"البيان_{self.windowTitle()}_{timestamp}.png")
+        file_name = os.path.join(paths.documents_dir, f"البيان_{self.windowTitle()}_{timestamp}.png")
         file_path, _ = QFileDialog.getSaveFileName(
         self, "حفظ الصورة", file_name, "Images (*.png *.jpg *.bmp)", options=options
         )

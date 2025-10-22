@@ -6,7 +6,7 @@ from core_functions.Reciters import AyahReciter
 from utils.audio_player import AyahPlayer
 from utils.audio_player.audio_player_thread import AudioPlayerThread
 from utils.settings import Config
-from utils.const import data_folder
+from utils.paths import paths
 from utils.logger import LoggerManager
 from exceptions.base import ErrorMessage
 
@@ -115,7 +115,7 @@ class AudioToolBar(QToolBar):
         logger.debug("Initializing AudioToolBar.")
         self.parent = parent
         self.player = AyahPlayer()
-        self.reciters = AyahReciter(data_folder / "quran" / "reciters.db")
+        self.reciters = AyahReciter(paths.data_folder / "quran" / "reciters.db")
         self.navigation = NavigationManager(self.parent, self.parent.quran_manager)
         self.audio_thread = AudioPlayerThread(self.player, self.parent)
         self.current_repeat = 0

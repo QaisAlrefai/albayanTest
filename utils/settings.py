@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass, asdict
 from abc import ABC
 from typing import Any, Dict, Tuple, ClassVar
-from utils.const import CONFIG_PATH, albayan_documents_dir
+from utils.paths import paths
 from utils.logger import LoggerManager
 
 logger = LoggerManager.get_logger(__name__)
@@ -96,7 +96,7 @@ class SurahPlayerSettings(BaseSection):
 class DownloadingSettings(BaseSection):
     SECTION_NAME: ClassVar[str] = "downloading"
     files_to_download_at_the_same_time: int = 1
-    download_path: str = os.path.join(albayan_documents_dir, "Downloads")
+    download_path: str = os.path.join(paths.documents_dir, "Downloads")
 
 @dataclass
 class PreferencesSettings(BaseSection):
@@ -200,8 +200,8 @@ class Config:
         If the config file cannot be read or is missing, it will save the default settings.
         """
         try:
-            if not cls._config_parser.read(CONFIG_PATH, encoding='utf-8'):
-                logger.warning(f"Config file '{CONFIG_PATH}' not found or empty. Saving default settings.")
+            if not cls._config_parser.read(paths.config_file, encoding='utf-8'):
+                logger.warning(f"Config file '{paths.config_file}' not found or empty. Saving default settings.")
                 cls.save_settings()
         except configparser.Error as e:
             logger.error(f"Failed to read config file: {e}. Reverting to default settings.", exc_info=True)
@@ -223,9 +223,9 @@ class Config:
     @classmethod
     def _write_config(cls) -> None:
         """Writes the current configuration to the config file."""
-        logger.debug(f"Writing configuration to '{CONFIG_PATH}'")
+        logger.debug(f"Writing configuration to '{paths.config_file}'")
         try:
-            with open(CONFIG_PATH, "w", encoding='utf-8') as config_file:
+            with open(paths.config_file, "w", encoding='utf-8') as config_file:
                 cls._config_parser.write(config_file)
             logger.info("Configuration saved successfully.")
         except Exception as e:

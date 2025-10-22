@@ -20,7 +20,8 @@ from core_functions.Reciters import SurahReciter, AyahReciter
 from utils.update import UpdateManager
 from utils.settings import Config
 from utils.logger import LoggerManager
-from utils.const import albayan_folder, program_name, program_version, website, Globals, download_db_path, reciters_db_path
+from utils.const import program_name, program_version, website, Globals
+from utils.paths import paths
 from utils.audio_player import bass
 from theme import ThemeManager
 
@@ -285,12 +286,12 @@ class MenuBar(QMenuBar):
 
     def open_download_manager(self):
         logger.debug("Opening Download Manager dialog.")
-        ayah_db = DownloadDB(f"sqlite:///{download_db_path}", DownloadAyahs)
+        ayah_db = DownloadDB(f"sqlite:///{paths.download_db_path}", DownloadAyahs)
         ayah_manager = DownloadManager(download_db=ayah_db, load_history=True, save_history=True, max_workers=Config.downloading.files_to_download_at_the_same_time)
-        ayah_reciters = AyahReciter(reciters_db_path)
-        surah_db = DownloadDB(f"sqlite:///{download_db_path}", DownloadSurahs)
+        ayah_reciters = AyahReciter(paths.reciters_db)
+        surah_db = DownloadDB(f"sqlite:///{paths.download_db_path}", DownloadSurahs)
         surah_manager = DownloadManager(download_db=surah_db, load_history=True, save_history=True, max_workers=Config.downloading.files_to_download_at_the_same_time)
-        surah_reciters = SurahReciter(reciters_db_path)
+        surah_reciters = SurahReciter(paths.reciters_db)
         download_dialog = DownloadManagerDialog(self.parent, surah_manager, ayah_manager, surah_reciters, ayah_reciters)
         download_dialog.open()
         logger.debug("Download Manager dialog opened.")
@@ -452,7 +453,7 @@ class MenuBar(QMenuBar):
         logger.info("Application quit.")
 
     def Onopen_log_file(self):
-        log_file_path = os.path.join(albayan_folder, "albayan.log")
+        log_file_path = os.path.join(paths.app_folder, "albayan.log")
 
         try:
             os.startfile(log_file_path)

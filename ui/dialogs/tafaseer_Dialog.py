@@ -18,7 +18,8 @@ from ui.widgets.qText_edit import ReadOnlyTextEdit
 from core_functions.tafaseer import TafaseerManager, Category
 from core_functions.quran.types import Ayah
 from utils.universal_speech import UniversalSpeech
-from utils.const import albayan_documents_dir, Globals
+from utils.const import Globals
+from utils.paths import paths
 from utils.logger import LoggerManager
 from exceptions.error_decorators import exception_handler
 
@@ -143,7 +144,7 @@ class TafaseerDialog(QDialog):
     def save_content(self):            
         logger.debug("User requested to save Tafaseer content.")
 
-        file_name = os.path.join(albayan_documents_dir, self.windowTitle())
+        file_name = os.path.join(paths.documents_dir, self.windowTitle())
         logger.debug(f"User attempting to save Tafaseer content to: {file_name}")
         # Open the file dialog in the Albayan directory
         file_path, _ = QFileDialog.getSaveFileName(

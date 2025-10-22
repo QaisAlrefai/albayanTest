@@ -17,7 +17,8 @@ from PyQt6.QtGui import QKeySequence, QShortcut
 from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadProgress
 from ui.widgets.qText_edit import ReadOnlyTextEdit
-from utils.const import program_name, temp_folder
+from utils.const import program_name
+from utils.paths import paths
 from utils.logger import LoggerManager
 import qtawesome as qta
 
@@ -26,8 +27,8 @@ logger = LoggerManager.get_logger(__name__)
 class UpdateDialog(QDialog):
 
     # Remove the files in temp folder
-    for file in os.listdir(temp_folder):
-        file_path = os.path.join(temp_folder,file )
+    for file in os.listdir(paths.temp_folder):
+        file_path = os.path.join(paths.temp_folder,file )
         if os.path.isfile(file_path):
             try:
                 os.remove(file_path)
@@ -96,7 +97,7 @@ class UpdateDialog(QDialog):
         self.progress_dialog.show()
 
         self.downloader = DownloadManager()
-        self.downloader.add_download(self.download_url, temp_folder)
+        self.downloader.add_download(self.download_url, paths.temp_folder)
         self.downloader.download_progress.connect(self.on_download_progress)
         self.downloader.download_finished.connect(self.on_download_finished)
         self.downloader.start()

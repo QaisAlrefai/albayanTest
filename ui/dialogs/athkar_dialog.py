@@ -8,7 +8,7 @@ from PyQt6.QtCore import Qt
 from core_functions.athkar.athkar_db_manager import AthkarDBManager
 from core_functions.athkar.models import AthkarCategory
 from core_functions.athkar.athkar_scheduler import AthkarScheduler
-from utils.const import user_db_path, data_folder, athkar_db_path, default_athkar_path
+from utils.paths import paths
 from utils.logger import LoggerManager
 
 
@@ -16,7 +16,7 @@ logger = LoggerManager.get_logger(__name__)
 
 
 class AthkarDialog(QDialog):
-    athkar_scheduler = AthkarScheduler(athkar_db_path, default_athkar_path, data_folder/"athkar/text_athkar.json")
+    athkar_scheduler = AthkarScheduler(paths.athkar_db, paths.athkar_audio, paths.data_folder/"athkar/text_athkar.json")
     athkar_scheduler.start()
 
     def __init__(self, parent):
@@ -24,7 +24,7 @@ class AthkarDialog(QDialog):
 
         self.setWindowTitle("الأذكار")
         self.resize(400, 350)
-        self.athkar_db = AthkarDBManager(athkar_db_path)
+        self.athkar_db = AthkarDBManager(paths.athkar_db)
 
         self.interval_options_dict = {
             5: "5 دقيقة",

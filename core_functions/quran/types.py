@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional
 from pathlib import Path
-from utils.const import data_folder
+from utils.paths import paths
 
 
 class NavigationMode(Enum):
@@ -30,11 +30,11 @@ class QuranFontType(Enum):
  
     @property
     def database(self) -> Path:
-        paths = {
-            QuranFontType.DEFAULT: data_folder / "quran" / "quran.DB",
-            QuranFontType.UTHMANI: data_folder / "quran" / "uthmani.DB",
+        files_paths = {
+            QuranFontType.DEFAULT: paths.data_folder / "quran" / "quran.DB",
+            QuranFontType.UTHMANI: paths.data_folder / "quran" / "uthmani.DB",
         }
-        return paths[self] 
+        return files_paths[self] 
  
  
 class MarksType(Enum):

@@ -13,7 +13,7 @@ from core_functions.Reciters import RecitersManager, SurahReciter, AyahReciter
 from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
 from utils.logger import LoggerManager
-from utils.const import data_folder
+from utils.paths import paths
 from utils.settings import Config
 
 logger = LoggerManager.get_logger(__name__)

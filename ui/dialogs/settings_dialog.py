@@ -24,7 +24,8 @@ from PyQt6.QtCore import Qt
 from ui.widgets.spin_box import SpinBox
 from core_functions.quran.types import QuranFontType, MarksType
 from core_functions.Reciters import AyahReciter
-from utils.const import data_folder, program_english_name, Globals
+from utils.const import program_english_name, Globals
+from utils.paths import paths
 from utils.settings import Config
 from utils.logger import LogLevel, LoggerManager
 from utils.audio_player import bass_initializer, AthkarPlayer, AyahPlayer, SurahPlayer, SoundEffectPlayer
@@ -39,7 +40,7 @@ class SettingsDialog(QDialog):
         self.parent = parent
         self.setWindowTitle("الإعدادات")
         self.resize(650, 550)
-        self.reciters_manager = AyahReciter(data_folder / "quran" / "reciters.db")
+        self.reciters_manager = AyahReciter(paths.data_folder / "quran" / "reciters.db")
         self.init_ui()
         self.set_current_settings()
 
