@@ -123,4 +123,15 @@ class DownloadWorker(QRunnable):
     def cancel(self) -> None:
         logger.debug(f"[Cancel Requested] ID={self.download_id}")
         self._cancelled = True
+        self.delete_temp_file()
         self.callbacks["status"](self.download_id, DownloadStatus.CANCELLED)
+
+    def delete_temp_file(self) -> None:
+        if os.path.exists(self.temp_path):
+            while True:
+                try:
+                    os.unlink(self.temp_path)
+                    break
+                except PermissionError:
+                    QThread.msleep(100)
+            logger.debug(f"[Temp File Deleted] ID={self.download_id}")

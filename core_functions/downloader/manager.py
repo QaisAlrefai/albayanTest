@@ -163,7 +163,18 @@ class DownloadManager(QObject):
     def cancel(self, download_id: int):
         logger.debug("Cancelling download ID: %d", download_id)
         if worker := self._downloads.get(download_id, {}).get("worker"):
-            worker.cancel()
+            worker.cancel()            
+
+    def restart(self, download_id: int):
+        logger.debug("Restarting download ID: %d", download_id)
+        if download_id in self._downloads:
+            self._downloads[download_id]["status"] = DownloadStatus.PENDING
+            self._downloads[download_id]["downloaded_bytes"] = 0
+            if self.db and self.save_history:
+                self.db.update_status(download_id, DownloadStatus.PENDING)
+            self.resume(download_id)
+        else:
+            logger.warning("Attempted to restart non-existent download ID: %d", download_id)
 
     def pause_all(self):
         logger.info("Pausing all downloads")
