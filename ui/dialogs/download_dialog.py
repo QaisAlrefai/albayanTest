@@ -127,6 +127,17 @@ class DownloadManagerDialog(QDialog):
     def current_filter_status(self) -> Optional[DownloadStatus]:
         return self.filter_combo.currentData()
 
+    @property
+    def current_download_item(self) -> Optional[QListWidgetItem]:
+        return self.list_widget.currentItem()
+    
+    @property
+    def current_download_id(self) -> Optional[int]:
+        item = self.current_download_item
+        if not item:
+            return None
+        return item.data(Qt.ItemDataRole.UserRole)
+
     def update_progress(self, progress: DownloadProgress):
         """Fast update for a specific item's progress."""
         item = self.item_map.get(progress.download_id)
@@ -207,13 +218,9 @@ class DownloadManagerDialog(QDialog):
 
     def delete_selected_item(self):
         """Delete the currently selected download item."""
-        item = self.list_widget.currentItem()
-        if not item:
-            return
-        download_id = item.data(Qt.ItemDataRole.UserRole)
-        self.current_manager.delete(download_id)
-        self.list_widget.takeItem(self.list_widget.row(item))
-        self.item_map.pop(download_id, None)
+        self.current_manager.delete(self.current_download_id)
+        self.list_widget.takeItem(self.list_widget.row(self.current_download_item))
+        self.item_map.pop(self.current_download_id, None)
 
     def delete_by_status(self, status):
         self.current_manager.delete_by_status(status)
