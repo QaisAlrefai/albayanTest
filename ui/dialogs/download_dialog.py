@@ -1,6 +1,6 @@
 
 from typing import List, Dict, Optional
-from enum import Enum
+from enum import Enum, auto
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QComboBox,
     QPushButton, QLabel, QLineEdit, QListWidget,
@@ -20,8 +20,8 @@ logger = LoggerManager.get_logger(__name__)
 
 
 class DownloadMode(Enum):
-    SURAH = "surah"
-    AYAH = "ayah"
+    SURAH = auto()
+    AYAH = auto()
 
 
 class DownloadManagerDialog(QDialog):
