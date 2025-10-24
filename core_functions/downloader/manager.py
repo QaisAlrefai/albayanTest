@@ -172,7 +172,17 @@ class DownloadManager(QObject):
             self._downloads[download_id]["downloaded_bytes"] = 0
             if self.db and self.save_history:
                 self.db.update_status(download_id, DownloadStatus.PENDING)
-            self.resume(download_id)
+            self._downloads[download_id]["worker"] = DownloadWorker(
+                self._downloads[download_id],
+                callbacks={
+                    "progress": self._on_progress,
+                    "finished": self._on_finished,
+                    "status": self._on_status,
+                    "error": self._on_error
+                },
+                manager=self
+            )
+            self.pool.start(self._downloads[download_id]["worker"])
         else:
             logger.warning("Attempted to restart non-existent download ID: %d", download_id)
 
