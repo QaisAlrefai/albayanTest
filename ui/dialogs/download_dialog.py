@@ -210,8 +210,28 @@ class DownloadManagerDialog(QDialog):
             self.item_map[item_data['id']] = item
 
     def show_context_menu(self, pos):
+        """Show context menu for the selected download item."""
+        if not self.current_download_item:
+            logger.warning("No download item selected for context menu.")
+            return
+        
         menu = QMenu(self)
+        current_status = self.current_manager.get_download(self.current_download_id)["status"]
+
+        # Pause / Resume depending on state
+        if current_status == DownloadStatus.DOWNLOADING:
+            menu.addAction("إيقاف مؤقت", lambda: self.current_manager.pause(self.current_download_id))
+        elif current_status == DownloadStatus.PAUSED:
+            menu.addAction("استئناف", lambda: self.current_manager.resume(self.current_download_id))
+
+        # Cancel option if active
+        if current_status not in [DownloadStatus.COMPLETED, DownloadStatus.CANCELLED]:
+            menu.addAction("إلغاء التحميل", lambda: self.current_manager.cancel(self.current_download_id))
+
+        # Delete option
+        menu.addSeparator()
         action_delete = menu.addAction("حذف العنصر المحدد", self.delete_selected_item)
+
         menu.setAccessibleName("الإجراءات")
         menu.setFocus()
         menu.exec(self.list_widget.mapToGlobal(pos))
@@ -245,6 +265,8 @@ class DownloadManagerDialog(QDialog):
         menu.setAccessibleName("قائمة حذف")
         menu.setFocus()
         menu.exec(self.btn_delete.mapToGlobal(self.btn_delete.rect().bottomLeft()))
+
+
 
     def download_surahs(self):
         surahs = self.parent.quran_manager.get_surahs()
