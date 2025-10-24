@@ -132,6 +132,10 @@ class DownloadManager(QObject):
         self.download_progress.emit(progress)
 
     def _on_status(self, download_id: int, new_status: DownloadStatus):
+        if download_id  not in  self._downloads:
+            logger.warning("Received status update for unknown download ID: %d", download_id)
+            return
+
         self._downloads[download_id]["status"] = new_status
         self.status_changed.emit(download_id, new_status)
 

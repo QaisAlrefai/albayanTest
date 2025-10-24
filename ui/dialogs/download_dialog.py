@@ -113,7 +113,7 @@ class DownloadManagerDialog(QDialog):
         self.ayah_manager.download_progress.connect(self.update_progress)
         self.surah_manager.status_changed.connect(self.update_status)
         self.ayah_manager.status_changed.connect(self.update_status)
-        #self.surah_manager.download_finished.connect(lambda id, fn: self.update_status(id, DownloadStatus.COMPLETED))
+        self.surah_manager.download_finished.connect(lambda id, fn: self.update_status(id, DownloadStatus.COMPLETED))
 
     @property
     def current_manager(self) -> DownloadManager:
@@ -145,7 +145,9 @@ class DownloadManagerDialog(QDialog):
         """Update the status of a specific item."""
         item = self.item_map.get(download_id)
         if not item:
+            logger.warning(f"Item with ID {download_id} not found in item_map.")
             return
+        
         text = item.text()
         if ", " in text:
             base_text = ", ".join(text.split(", ")[:-1])
@@ -156,6 +158,7 @@ class DownloadManagerDialog(QDialog):
         """Handle when a download is finished."""
         item = self.item_map.get(download_id)
         if not item:
+            logger.warning(f"Item with ID {download_id} not found in item_map.")
             return
         
         download_item = self.current_manager.get_download(download_id)
@@ -167,6 +170,7 @@ class DownloadManagerDialog(QDialog):
         """Rebuild the visible list based on filters and search."""
         manager = self.current_manager
         if not manager:
+            logger.warning("No download manager selected.")
             return
 
         self.list_widget.clear()
@@ -196,8 +200,9 @@ class DownloadManagerDialog(QDialog):
 
     def show_context_menu(self, pos):
         menu = QMenu(self)
-        action_delete = menu.addAction("حذف العنصر المحدد")
-        action_delete.triggered.connect(self.delete_selected_item)
+        action_delete = menu.addAction("حذف العنصر المحدد", self.delete_selected_item)
+        menu.setAccessibleName("الإجراءات")
+        menu.setFocus()
         menu.exec(self.list_widget.mapToGlobal(pos))
 
     def delete_selected_item(self):
@@ -231,7 +236,7 @@ class DownloadManagerDialog(QDialog):
             ])
         )
         menu.setAccessibleName("قائمة حذف")
-        menu.setActiveAction(menu.actions()[0])
+        menu.setFocus()
         menu.exec(self.btn_delete.mapToGlobal(self.btn_delete.rect().bottomLeft()))
 
     def download_surahs(self):
@@ -253,17 +258,18 @@ class DownloadManagerDialog(QDialog):
                 for num in range(from_surah.number, to_surah.number + 1)
             ]
 
-            path = f"{Config.downloading.download_path}/{reciter['id']}"
+            path = F"{Config.downloading.download_path}/{reciter['id']}"
             self.surah_manager.add_new_downloads(new_downloads, path)
             self.surah_manager.start()
             self.update_list()
+            self.list_widget.setFocus()
 
     def show_download_menu(self):
         menu = QMenu(self)
         menu.addAction("تنزيل سور", self.download_surahs)
         menu.addAction("تنزيل آيات")
         menu.setAccessibleName("قائمة تنزيل جديد")
-        menu.setActiveAction(menu.actions()[0])
+        menu.setFocus()
         menu.exec(self.btn_download.mapToGlobal(self.btn_download.rect().bottomLeft()))
 
 
