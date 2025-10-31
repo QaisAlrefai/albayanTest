@@ -57,25 +57,40 @@ def extract_headings(md_text):
 
 def generate_toc_html(toc):
     """
-    Generate a nested HTML Table of Contents (TOC) from extracted headings.
-    
-    The TOC links each heading to its section using anchor tags.
-    The structure is hierarchical, matching the nesting of the original headings.
+    Generate a single hierarchical TOC with one main <ul>,
+    handling skipped levels and consecutive headings.
     """
     if not toc:
         return ""
-    html = "<div class='toc'>\n<h2>جدول المحتويات</h2>\n<ul>\n"
-    prev_level = 1
+
+    html = "<div class='toc'>\n<h2>جدول المحتويات</h2>\n"
+    html += "<ul>\n"
+    
+    prev_level = 0
+    
     for num, title, level, section_id in toc:
         if level > prev_level:
-            html += "<ul>\n" * (level - prev_level)
+
+            for _ in range(level - prev_level - 1):
+                html += "<li><ul>\n"
+            if prev_level > 0:
+                html += "<ul>\n"
         elif level < prev_level:
-            html += "</ul>\n" * (prev_level - level)
-        html += f'<li><a href="#{section_id}">{num}. {title}</a></li>\n'
+            for _ in range(prev_level - level):
+                html += "</li>\n</ul>\n"
+            html += "</li>\n"
+        else:
+            if prev_level > 0:
+                html += "</li>\n"
+        
+        html += f'<li><a href="#{section_id}">{num}. {title}</a>'
         prev_level = level
+    
+    for _ in range(prev_level):
+        html += "</li>\n</ul>\n"
+    
     html += "</ul>\n</div>\n"
     return html
-
 
 def add_ids_to_headings(html, toc):
     """
@@ -130,12 +145,12 @@ def convert_file(input_file, output_folder, version, include_toc=True):
     filename = os.path.basename(input_file)
 
     if "WhatsNew.md" in filename:
-        title = f"ما الجديد في البيان الإصدار ({version})؟"
+        title = f"ما الجديد في البيان الإصدار {version}؟"
         html_body = markdown(md_text, extensions=['extra', 'tables', 'fenced_code'])
         html_body = modify_external_links(html_body)
 
     elif "UserGuide.md" in filename:
-        title = f"دليل استخدام البيان الإصدار ({version})"
+        title = f"دليل استخدام البيان الإصدار {version}"
         toc = extract_headings(md_text)
         toc_html = generate_toc_html(toc) if include_toc else ""
         html_body = markdown(md_text, extensions=['extra', 'tables', 'fenced_code'])
@@ -175,7 +190,7 @@ def main():
     parser = argparse.ArgumentParser(description="Convert Markdown to HTML with Arabic TOC and custom IDs.")
     parser.add_argument("-i", "--input", help="Input folder containing Markdown files. Default: current folder.")
     parser.add_argument("-o", "--output", help="Output folder for generated HTML files. Default: same as input.")
-    parser.add_argument("-v", "--version", default="1.0.0", help="Version number (default: 1.0.0).")
+    parser.add_argument("-v", "--version", default="4.0.2", help="Version number (default: 4.0.2).")
     parser.add_argument("--no-toc", action="store_true", help="Disable Table of Contents generation.")
     args = parser.parse_args()
 
