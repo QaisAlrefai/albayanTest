@@ -62,6 +62,7 @@ class DownloadManagerDialog(QDialog):
 
         self.section_label = QLabel("القسم:")
         self.section_combo = QComboBox()
+        self.section_combo.setAccessibleName(self.section_label.text())
         for manager, reciters_manager, label in [
             (self.surah_manager, self.surah_reciters, "السور"), 
             (self.ayah_manager, self.ayah_reciters, "الآيات")
@@ -71,6 +72,7 @@ class DownloadManagerDialog(QDialog):
 
         self.filter_label = QLabel("تصفية:")
         self.filter_combo = QComboBox()
+        self.filter_combo.setAccessibleName(self.filter_label.text())
         self.filter_combo.addItem("الكل", None)
         for status in DownloadStatus:
             self.filter_combo.addItem(status.label, status)
