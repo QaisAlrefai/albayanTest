@@ -204,13 +204,17 @@ class DownloadManager(QObject):
         for download_id in self._downloads:
             self.cancel(download_id)
 
-    def delete(self, download_id: int):
+    def delete(self, download_id: int, delete_file: bool = True):
         logger.debug("Deleting download ID: %d", download_id)
         if download_id in self._downloads:
             if worker := self._downloads[download_id].get("worker"):
                 worker.cancel()
             if self.db and self.save_history:
                 self.db.delete(download_id)
+            if delete_file:
+                file_path = os.path.join(self._downloads[download_id]["folder_path"], self._downloads[download_id]["filename"])
+                os.unlink(file_path)
+                logger.info("Deleted file: %s", file_path)
             del self._downloads[download_id]
             logger.info("Deleted download ID: %d", download_id)
         else:
