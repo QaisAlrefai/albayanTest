@@ -192,6 +192,7 @@ class DownloadManagerDialog(QDialog):
         status = self.current_filter_status
         search_text = self.search_box.text().strip().lower()
         download_items = manager.get_downloads(status)
+        surahs = self.parent.quran_manager.get_surahs()
 
         for item_data in download_items:
             if search_text and search_text not in item_data["filename"].lower():
@@ -201,8 +202,9 @@ class DownloadManagerDialog(QDialog):
                 f"{(item_data['downloaded_bytes'] / item_data['total_bytes'] * 100):.1f}%, " if item_data["total_bytes"] > 0 else "0%, "
             ) + f", الحجم {item_data.get('size_text', 'غير معروف')}"
 
+            surah = surahs[item_data["surah_number"] - 1]
             reciter_display_text = self.current_reciters_manager.get_reciter(item_data["reciter_id"]).get("display_text", "قارئ غير معروف")
-            display_text = f"{item_data['filename']}, {reciter_display_text}, {item_data['status'].label}"
+            display_text = f"{item_data['filename']}, {surah.name}, {reciter_display_text}, {item_data['status'].label}"
 
             item = QListWidgetItem(display_text)
             item.setData(Qt.ItemDataRole.UserRole, item_data['id'])
