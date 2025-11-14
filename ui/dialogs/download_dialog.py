@@ -405,6 +405,9 @@ class NewDownloadDialog(QDialog):
         self.setFocus()
         QTimer.singleShot(200, self.reciter_combo.setFocus)
 
+        #for qais to test it
+        self.reciter_combo.setAccessibleIdentifier("RECITERCOMBO")
+
     def _on_reciter_changed(self):
         """Update Surah and Ayah combos when reciter changes."""
         reciter = self.reciter_combo.currentData()
