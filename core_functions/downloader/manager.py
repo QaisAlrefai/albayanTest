@@ -1,6 +1,7 @@
 
 import os
 from typing import List, Dict, Optional, Union
+from pathlib import Path
 from PyQt6.QtCore import QObject, QThreadPool, pyqtSignal
 
 from .worker import DownloadWorker
@@ -212,8 +213,8 @@ class DownloadManager(QObject):
             if self.db and self.save_history:
                 self.db.delete(download_id)
             if delete_file:
-                file_path = os.path.join(self._downloads[download_id]["folder_path"], self._downloads[download_id]["filename"])
-                os.unlink(file_path)
+                file_path = Path(self._downloads[download_id]["folder_path"]) / self._downloads[download_id]["filename"]
+                file_path.unlink(missing_ok=True)
                 logger.info("Deleted file: %s", file_path)
             del self._downloads[download_id]
             logger.info("Deleted download ID: %d", download_id)
