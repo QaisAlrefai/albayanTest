@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QListWidget,
     QListWidgetItem, QMenu, QGridLayout
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 
 from core_functions.quran.types import Surah
 from core_functions.Reciters import RecitersManager, SurahReciter, AyahReciter
@@ -323,7 +323,6 @@ class NewDownloadDialog(QDialog):
 
         # Window settings
         self.setWindowTitle("تحميل سور" if mode == DownloadMode.SURAH else "تحميل آيات")
-        self.setAccessibleName("نافذة التحميل")
 
         layout = QVBoxLayout()
         grid = QGridLayout()
@@ -401,6 +400,10 @@ class NewDownloadDialog(QDialog):
         # Initial population
         self.reciter_combo.currentIndexChanged.connect(self._on_reciter_changed)
         self._on_reciter_changed()
+
+        # Add delayed focus to fixe accessable issue
+        self.setFocus()
+        QTimer.singleShot(200, self.reciter_combo.setFocus)
 
     def _on_reciter_changed(self):
         """Update Surah and Ayah combos when reciter changes."""
