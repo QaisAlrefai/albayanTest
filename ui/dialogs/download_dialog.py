@@ -232,8 +232,10 @@ class DownloadManagerDialog(QDialog):
         # Cancel option if active
         if current_status not in [DownloadStatus.COMPLETED, DownloadStatus.CANCELLED]:
             menu.addAction("إلغاء التحميل", lambda: self.current_manager.cancel(self.current_download_id))
+            menu.addAction("إلغاء تحميل الكل", self.current_manager.cancel_all())
         elif current_status == DownloadStatus.CANCELLED:
             menu.addAction("بدء التحميل", lambda: self.current_manager.restart(self.current_download_id))
+            menu.addAction("بدء تحميل الكل", self.current_manager.restart_all())
                 
         # Delete option
         menu.addSeparator()
