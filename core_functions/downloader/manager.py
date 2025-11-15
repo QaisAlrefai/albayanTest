@@ -217,8 +217,8 @@ class DownloadManager(QObject):
 
     def restart_all(self):
         logger.info("Restarting all downloads")
-        for download_id in self.get_downloads(DownloadStatus.CANCELLED):
-            self.restart(download_id)
+        for download in self.get_downloads(DownloadStatus.CANCELLED):
+            self.restart(download_id=download["id"])
 
     def delete(self, download_id: int, delete_file: bool = True):
         logger.debug("Deleting download ID: %d", download_id)
