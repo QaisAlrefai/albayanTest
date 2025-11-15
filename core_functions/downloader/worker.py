@@ -55,6 +55,7 @@ class DownloadWorker(QRunnable):
             r.raise_for_status()
             content_length = int(r.headers.get("content-length", 0))
             total_bytes = downloaded_bytes + content_length
+            self.manager.set_size_text(self.download_id, total_bytes)
 
             progress = DownloadProgress(
                 download_id=self.download_id,

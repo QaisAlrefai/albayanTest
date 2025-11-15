@@ -115,7 +115,8 @@ class DownloadManagerDialog(QDialog):
         self.ayah_manager.download_progress.connect(self.update_progress)
         self.surah_manager.status_changed.connect(self.update_status)
         self.ayah_manager.status_changed.connect(self.update_status)
-        self.surah_manager.download_finished.connect(lambda id, fn: self.update_status(id, DownloadStatus.COMPLETED))
+        self.surah_manager.download_finished.connect(self.on_finished)
+        self.ayah_manager.download_finished.connect(self.on_finished)
 
     @property
     def current_manager(self) -> DownloadManager:

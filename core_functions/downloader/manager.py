@@ -61,7 +61,7 @@ class DownloadManager(QObject):
                 "total_bytes": item.total_bytes,
                 "file_hash": item.file_hash,
             }
-            self._downloads[item.id]["size_text"] = size_text = f"{item.total_bytes / (1024 * 1024):.2f} MB" if item.total_bytes > 1024 * 1024 else f"{item.total_bytes / 1024:.2f} KB"
+            self.set_size_text(item.id, item.total_bytes)
 
             # Include any additional fields that might exist in the DB model
             other_keys = set(item.__dict__.keys())- set(self.db.download_table.__table__.c)
@@ -94,6 +94,7 @@ class DownloadManager(QObject):
                 download_id = len(self._downloads) + 1
 
             item_data["id"] = download_id
+            item_data["size_text"] = None
             self._downloads[download_id] = item_data
         logger.info("Added %d new download items", len(download_items))
 
@@ -142,6 +143,15 @@ class DownloadManager(QObject):
 
         if self.db and self.save_history:
             self.db.update_status(download_id, new_status)
+
+    def set_size_text(self, download_id: int, total_bytes: int) -> None:
+        if download_id in self._downloads:
+            self._downloads[download_id]["total_bytes"] = total_bytes
+            size_text = f"{total_bytes / (1024 * 1024):.2f} MB" if total_bytes > 1024 * 1024 else f"{total_bytes / 1024:.2f} KB"
+            self._downloads[download_id]["size_text"] = size_text
+            logger.debug("Set size text for download ID %d: %s", download_id, size_text)
+        else:
+            logger.warning("Attempted to set size text for unknown download ID: %d", download_id)
 
     def _on_error(self, download_id: int, message: str):
         logger.error("Download error (ID: %d): %s", download_id, message)
