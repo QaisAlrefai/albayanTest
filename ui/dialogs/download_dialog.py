@@ -2,7 +2,7 @@
 from typing import List, Dict, Optional
 from enum import Enum, auto
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QComboBox,
+    QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QMessageBox,
     QPushButton, QLabel, QLineEdit, QListWidget,
     QListWidgetItem, QMenu, QGridLayout
 )
@@ -231,8 +231,12 @@ class DownloadManagerDialog(QDialog):
 
         # Cancel option if active
         if current_status not in [DownloadStatus.COMPLETED, DownloadStatus.CANCELLED]:
-            menu.addAction("إلغاء التحميل", lambda: self.current_manager.cancel(self.current_download_id))
-            menu.addAction("إلغاء تحميل الكل", self.current_manager.cancel_all)
+            menu.addAction("إلغاء التحميل",
+            lambda: self.current_manager.cancel(self.current_download_id) 
+            if self.confirm_cancel_item(self.current_download_id) else None)
+            menu.addAction("إلغاء تحميل الكل",
+            lambda: self.current_manager.cancel_all() 
+            if self.confirm_cancel_all() else None)
         elif current_status == DownloadStatus.CANCELLED:
             menu.addAction("بدء التحميل", lambda: self.current_manager.restart(self.current_download_id))
             menu.addAction("بدء تحميل الكل", self.current_manager.restart_all)
@@ -247,30 +251,140 @@ class DownloadManagerDialog(QDialog):
 
     def delete_selected_item(self):
         """Delete the currently selected download item."""
-        self.current_manager.delete(self.current_download_id)
-        self.list_widget.takeItem(self.list_widget.row(self.current_download_item))
-        self.item_map.pop(self.current_download_id, None)
+        if not self.current_download_item:
+            return
 
-    def delete_by_status(self, status):
-        self.current_manager.delete_by_status(status)
+        download_id = self.current_download_id
+        data = self.current_manager.get_download(download_id)
+        surahs = self.parent.quran_manager.get_surahs()
+        surah = surahs[data["surah_number"] - 1]
+        reciter = self.current_reciters_manager.get_reciter(data["reciter_id"])
+        reciter_name = reciter.get("display_text", "قارئ غير معروف")
+
+        item_name = data["filename"]
+        surah_name = surah.name
+
+        full_title = f"{item_name} - {surah_name} - {reciter_name}"
+
+
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle("تأكيد الحذف")
+        msg_box.setText(
+            f"هل أنت متأكد من حذف العنصر التالي؟\n\n{full_title}"
+        )
+
+        yes_button = msg_box.addButton("نعم", QMessageBox.ButtonRole.AcceptRole)
+        no_button = msg_box.addButton("لا", QMessageBox.ButtonRole.RejectRole)
+
+        msg_box.exec()
+
+
+        if msg_box.clickedButton() != yes_button:
+            return
+
+
+        self.current_manager.delete(download_id)
+
+        self.item_map.pop(download_id, None)
         self.update_list()
+
+
+
+    def delete_by_status(self, status, status_label):
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle("تأكيد الحذف")
+        msg_box.setText(f"هل تريد حذف العناصر {status_label}؟")
+
+        yes_button = msg_box.addButton("نعم", QMessageBox.ButtonRole.AcceptRole)
+        msg_box.addButton("لا", QMessageBox.ButtonRole.RejectRole)
+        msg_box.exec()
+
+        if msg_box.clickedButton() != yes_button:
+            return
+
+
+        if status == "incomplete":
+            statuses = {
+                DownloadStatus.PENDING,
+                DownloadStatus.DOWNLOADING,
+                DownloadStatus.PAUSED,
+                DownloadStatus.CANCELLED,
+                DownloadStatus.ERROR
+            }
+            for st in statuses:
+                self.current_manager.delete_by_status(st)
+        else:
+            self.current_manager.delete_by_status(status)
+
+        self.update_list()
+
+
+
+    def confirm_cancel_item(self, download_id: int) -> bool:
+        """Show a confirmation dialog before cancelling a specific download."""
+        data = self.current_manager.get_download(download_id)
+        surahs = self.parent.quran_manager.get_surahs()
+        surah = surahs[data["surah_number"] - 1]
+        reciter = self.current_reciters_manager.get_reciter(data["reciter_id"])
+        reciter_name = reciter.get("display_text", "قارئ غير معروف")
+        full_title = f"{data['filename']} - {surah.name} - {reciter_name}"
+
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle("تأكيد إلغاء التحميل")
+        msg_box.setText(f"هل أنت متأكد من إلغاء تحميل العنصر التالي؟\n\n{full_title}")
+        yes_button = msg_box.addButton("نعم", QMessageBox.ButtonRole.AcceptRole)
+        no_button =msg_box.addButton("لا", QMessageBox.ButtonRole.RejectRole)
+        msg_box.exec()
+        return msg_box.clickedButton() == yes_button
+
+
+
+
+
+    def confirm_cancel_all(self) -> bool:
+        """Show a confirmation dialog before cancelling all downloads."""
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle("تأكيد إلغاء الكل")
+        msg_box.setText("هل أنت متأكد من إلغاء جميع التنزيلات؟")
+        yes_button = msg_box.addButton("نعم", QMessageBox.ButtonRole.AcceptRole)
+        no_button = msg_box.addButton("لا", QMessageBox.ButtonRole.RejectRole)
+        msg_box.exec()
+        return msg_box.clickedButton() == yes_button
+
+
 
     def delete_all(self):
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle("تأكيد حذف الكل")
+        msg_box.setText("هل أنت متأكد من حذف جميع العناصر؟")
+
+        yes_button = msg_box.addButton("نعم", QMessageBox.ButtonRole.AcceptRole)
+        no_button = msg_box.addButton("لا", QMessageBox.ButtonRole.RejectRole)
+
+        msg_box.exec()
+
+        if msg_box.clickedButton() != yes_button:
+            return
+
         self.current_manager.delete_all()
         self.update_list()
+
 
     def show_delete_menu(self):
         menu = QMenu(self)
         menu.addAction("حذف الكل", self.delete_all)
-        menu.addAction("حذف المكتمل", lambda: self.delete_by_status(DownloadStatus.COMPLETED))
-        menu.addAction(
-            "حذف غير المكتمل",
-            lambda: self.delete_by_status([
-                DownloadStatus.PENDING, DownloadStatus.DOWNLOADING,
-                DownloadStatus.PAUSED, DownloadStatus.CANCELLED,
-                DownloadStatus.ERROR
-            ])
-        )
+        menu.addAction("حذف المكتمل",
+        lambda: self.delete_by_status(DownloadStatus.COMPLETED, "المكتمل"))
+
+        menu.addAction("حذف غير المكتمل",
+        lambda: self.delete_by_status("incomplete", "غير المكتمل"))
+
+        
         menu.setAccessibleName("قائمة حذف")
         menu.setFocus()
         menu.exec(self.btn_delete.mapToGlobal(self.btn_delete.rect().bottomLeft()))
