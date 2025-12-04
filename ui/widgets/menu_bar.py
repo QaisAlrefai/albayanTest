@@ -7,7 +7,7 @@ from ui.dialogs.settings_dialog import SettingsDialog
 from ui.dialogs.bookmark_dialog import BookmarkDialog
 from ui.dialogs.go_to import GoToDialog, GoToStyle
 from ui.dialogs.athkar_dialog import AthkarDialog
-from ui.dialogs.download_dialog import DownloadManagerDialog
+from ui.dialogs.download_manager_dialog import DownloadManagerDialog
 from ui.sura_player_ui import SuraPlayerWindow
 from ui.dialogs.tasbih_dialog import TasbihDialog
 
