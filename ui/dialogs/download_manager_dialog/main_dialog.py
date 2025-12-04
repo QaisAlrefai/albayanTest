@@ -85,7 +85,8 @@ class DownloadManagerDialog(QDialog):
         layout.addWidget(self.list_widget)
 
         # === Session Progress ===
-        self.session_progress = SessionProgressBar()
+        self.session_progress = SessionProgressBar(self)
+        self.session_progress.set_managers([self.surah_manager, self.ayah_manager])
         layout.addWidget(self.session_progress)
 
         # === Buttons ===
@@ -413,6 +414,7 @@ class DownloadManagerDialog(QDialog):
             self.surah_manager.add_new_downloads(new_downloads, path)
             self.surah_manager.start()
             self.update_list()
+            self.session_progress.recalculate_totals()
             self.list_widget.setFocus()
 
     def download_ayahs(self):
@@ -446,6 +448,7 @@ class DownloadManagerDialog(QDialog):
                 self.ayah_manager.add_new_downloads(new_downloads, path)
                 self.ayah_manager.start()
                 self.update_list()
+                self.session_progress.recalculate_totals()
                 self.list_widget.setFocus()
 
     def show_download_menu(self):

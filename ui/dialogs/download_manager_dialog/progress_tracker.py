@@ -1,5 +1,5 @@
 
-from typing import List, Union
+from typing import List, Union, Optional
 from PyQt6.QtWidgets import QProgressBar
 from core_functions.downloader.status import DownloadStatus
 from core_functions.downloader.manager import DownloadManager  # افترض اسم الكلاس
@@ -11,7 +11,7 @@ class SessionProgressBar(QProgressBar):
     - PAUSED files decrease the in-progress count.
     """
 
-    def __init__(self, parent: Union[None, 'QWidget'] = None) -> None:
+    def __init__(self, parent = None) -> None:
         super().__init__(parent)
         self._managers: List[DownloadManager] = []
         self._total_files: int = 0
@@ -29,19 +29,19 @@ class SessionProgressBar(QProgressBar):
         if not isinstance(managers, list):
             managers = [managers]
         self._managers = managers
-        self._recalculate_totals()
+        self.recalculate_totals()
 
         # Connect signals for automatic updates
         for mgr in self._managers:
             mgr.download_finished.connect(self._on_file_finished)
             mgr.status_changed.connect(self._on_status_changed)
 
-    def _recalculate_totals(self) -> None:
+    def recalculate_totals(self) -> None:
         """Recompute total files in-progress for the session."""
         self._total_files = 0
 
         for mgr in self._managers:
-            self._total_files += len(mgr.get_downloads([DownloadStatus.PENDING, DownloadStatus.DOWNLOADING]))
+            self._total_files += len(mgr.get_downloads([DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED]))
 
         self.setMaximum(self._total_files + self._completed_files)
         self.setValue(self._completed_files)
@@ -61,7 +61,7 @@ class SessionProgressBar(QProgressBar):
         self._completed_files = 0
         self._total_files = 0
         self.setMaximum(0)
-        self.setValue(0)
+
 
     def _on_file_finished(self, download_id: int) -> None:
         """Slot for download_finished signal."""
