@@ -416,10 +416,56 @@ class DownloadManagerDialog(QDialog):
             self.update_list()
             self.list_widget.setFocus()
 
+    def download_ayahs(self):
+        surahs = self.parent.quran_manager.get_surahs()
+
+        dialog = NewDownloadDialog(self, DownloadMode.AYAH, surahs, self.ayah_reciters)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            selection = dialog.get_selection()
+            reciter = selection["reciter"]
+            from_surah = selection["from_surah"]
+            to_surah = selection["to_surah"]
+            from_ayah_global = selection["from_ayah"]
+            to_ayah_global = selection["to_ayah"]
+
+            new_downloads = []
+            
+            # Iterate through the range of surahs
+            for surah in surahs:
+                if surah.number < from_surah.number or surah.number > to_surah.number:
+                    continue
+                
+                # Determine start and end ayah (1-based index in surah)
+                start_ayah = 1
+                end_ayah = surah.ayah_count
+                
+                if surah.number == from_surah.number:
+                    start_ayah = from_ayah_global - surah.first_ayah_number + 1
+                
+                if surah.number == to_surah.number:
+                    end_ayah = to_ayah_global - surah.first_ayah_number + 1
+                
+                for ayah_num in range(start_ayah, end_ayah + 1):
+                    url = self.ayah_reciters.get_url(reciter["id"], surah.number, ayah_num)
+                    if url:
+                        new_downloads.append({
+                            "reciter_id": reciter["id"],
+                            "surah_number": surah.number,
+                            "ayah_number": ayah_num,
+                            "url": url,
+                        })
+
+            if new_downloads:
+                path = F"{Config.downloading.download_path}/{reciter['id']}"
+                self.ayah_manager.add_new_downloads(new_downloads, path)
+                self.ayah_manager.start()
+                self.update_list()
+                self.list_widget.setFocus()
+
     def show_download_menu(self):
         menu = QMenu(self)
         menu.addAction("تنزيل سور", self.download_surahs)
-        menu.addAction("تنزيل آيات")
+        menu.addAction("تنزيل آيات", self.download_ayahs)
         menu.setAccessibleName("قائمة تنزيل جديد")
         menu.setFocus()
         menu.exec(self.btn_download.mapToGlobal(self.btn_download.rect().bottomLeft()))
@@ -533,17 +579,17 @@ class NewDownloadDialog(QDialog):
         if not reciter:
             return
         
-        if self.mode == DownloadMode.SURAH:
-            self._populate_surahs(reciter, self.from_surah_combo)
-            self._populate_surahs(reciter, self.to_surah_combo)
-        elif self.mode == DownloadMode.AYAH:
+        self._populate_surahs(reciter, self.from_surah_combo)
+        self._populate_surahs(reciter, self.to_surah_combo)
+
+        if self.mode == DownloadMode.AYAH:
             self._populate_ayahs(self.from_surah_combo, self.from_ayah_combo)
             self._populate_ayahs(self.to_surah_combo, self.to_ayah_combo)
 
     def _populate_surahs(self, reciter, combo: QComboBox):
         """Fill Surah combo with only available Surahs for the selected reciter."""
         combo.clear()
-        available = set(reciter["available_suras"])
+        available = set(reciter.get("available_suras", [])) if self.mode == DownloadMode.SURAH else set([surah.number for surah in self.surahs])
 
         for sura in self.surahs:
             if sura.number in available:
