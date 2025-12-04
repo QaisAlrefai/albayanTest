@@ -14,6 +14,7 @@ from utils.settings import Config
 
 from .models import DownloadMode
 from .new_download_dialog import NewDownloadDialog
+from .progress_tracker import SessionProgressBar
 
 logger = LoggerManager.get_logger(__name__)
 
@@ -40,6 +41,7 @@ class DownloadManagerDialog(QDialog):
         self.setMinimumWidth(520)
 
         self._setup_ui()
+        self.session_progress.set_managers([self.surah_manager, self.ayah_manager])
         self._connect_signals()
         self.update_list()
         
@@ -81,6 +83,10 @@ class DownloadManagerDialog(QDialog):
         self.list_widget = QListWidget()
         self.list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         layout.addWidget(self.list_widget)
+
+        # === Session Progress ===
+        self.session_progress = SessionProgressBar()
+        layout.addWidget(self.session_progress)
 
         # === Buttons ===
         btn_layout = QHBoxLayout()
@@ -424,26 +430,13 @@ class DownloadManagerDialog(QDialog):
             new_downloads = []
             
             # Iterate through the range of surahs
-            for surah in surahs:
-                if surah.number < from_surah.number or surah.number > to_surah.number:
-                    continue
-                
-                # Determine start and end ayah (1-based index in surah)
-                start_ayah = 1
-                end_ayah = surah.ayah_count
-                
-                if surah.number == from_surah.number:
-                    start_ayah = from_ayah_global - surah.first_ayah_number + 1
-                
-                if surah.number == to_surah.number:
-                    end_ayah = to_ayah_global - surah.first_ayah_number + 1
-                
-                for ayah_num in range(start_ayah, end_ayah + 1):
-                    url = self.ayah_reciters.get_url(reciter["id"], surah.number, ayah_num)
+            for surah_num in range(from_surah.number, to_surah.number + 1):                                
+                for ayah_num in range(from_ayah_global, to_ayah_global + 1):
+                    url = self.ayah_reciters.get_url(reciter["id"], surah_num, ayah_num)
                     if url:
                         new_downloads.append({
                             "reciter_id": reciter["id"],
-                            "surah_number": surah.number,
+                            "surah_number": surah_num,
                             "ayah_number": ayah_num,
                             "url": url,
                         })

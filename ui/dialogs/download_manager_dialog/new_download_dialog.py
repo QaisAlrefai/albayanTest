@@ -141,8 +141,8 @@ class NewDownloadDialog(QDialog):
 
         ayah_combo.clear()
         for i in range(sura.ayah_count):
-            ayah_number = sura.first_ayah_number + i
-            ayah_combo.addItem(str(i + 1), ayah_number)
+            ayah_number = i + 1
+            ayah_combo.addItem(str(ayah_number), ayah_number)
 
     def get_selection(self) -> dict:
         """Return user selections as a dictionary with auto-correction."""
