@@ -86,7 +86,6 @@ class DownloadManagerDialog(QDialog):
 
         # === Session Progress ===
         self.session_progress = SessionProgressBar(self)
-        self.session_progress.set_managers([self.surah_manager, self.ayah_manager])
         layout.addWidget(self.session_progress)
 
         # === Buttons ===

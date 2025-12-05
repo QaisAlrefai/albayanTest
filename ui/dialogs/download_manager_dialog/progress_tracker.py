@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Set
 from PyQt6.QtWidgets import QProgressBar
 from core_functions.downloader.status import DownloadStatus
 from core_functions.downloader.manager import DownloadManager
@@ -13,21 +13,21 @@ class SessionProgressBar(QProgressBar):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
 
-        self._managers: List[DownloadManager] = []
+        self._managers: Set[DownloadManager] = set()
         self._total_files: int = 0
         self._completed_files: int = 0
 
         self.setMinimum(0)
         self.setMaximum(100)
         self.setValue(0)
-        self.setFormat("%p%")        # يعرض النسبة تلقائيًا
+        self.setFormat("%p%")       
 
     def set_managers(self, managers: Union[DownloadManager, List[DownloadManager]]) -> None:
         """Assign one or multiple managers to track."""
         if not isinstance(managers, list):
             managers = [managers]
 
-        self._managers = managers
+        self._managers = set(managers)
         self.recalculate_totals()
 
         for mgr in self._managers:
@@ -47,6 +47,7 @@ class SessionProgressBar(QProgressBar):
             self._total_files += len(downloads)
 
         self._update_progress()
+        print(f"SessionProgressBar: Total files to download: {self._total_files}")
 
     def _update_progress(self) -> None:
         """Calculate percentage and update the bar."""
@@ -55,7 +56,7 @@ class SessionProgressBar(QProgressBar):
             return
 
         percentage = int((self._completed_files / self._total_files) * 100)
-        percentage = max(0, min(100, percentage))  # clamp for safety
+        percentage = max(0, min(100, percentage))  
 
         self.setValue(percentage)
 
@@ -77,6 +78,8 @@ class SessionProgressBar(QProgressBar):
     def _on_file_finished(self, download_id: int) -> None:
         """Triggered when a download finishes."""
         self.increment()
+        if self._completed_files >= self._total_files:
+            self.finish_session()
 
     def _on_status_changed(self, download_id: int, status: DownloadStatus) -> None:
         """Triggered when a download changes state."""
