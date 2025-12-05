@@ -175,7 +175,7 @@ class DownloadManagerDialog(QDialog):
             return
         
         download_item = self.current_manager.get_download(download_id)
-        text = f"100%, الحجم {download_item['size_text']}"
+        text = f"100%, الحجم {download_item['size_text'] or 'غير معروف'}"
         item.setData(Qt.ItemDataRole.AccessibleDescriptionRole, text)
         item.setToolTip(text)
 
@@ -200,7 +200,7 @@ class DownloadManagerDialog(QDialog):
 
             progress = (
                 f"{(item_data['downloaded_bytes'] / item_data['total_bytes'] * 100):.1f}%, " if item_data["total_bytes"] > 0 else "0%, "
-            ) + f", الحجم {item_data.get('size_text', 'غير معروف')}"
+            ) + f", الحجم {item_data.get('size_text') or 'غير معروف'}"
 
             surah = surahs[item_data["surah_number"] - 1]
             reciter_display_text = self.current_reciters_manager.get_reciter(item_data["reciter_id"]).get("display_text", "قارئ غير معروف")
