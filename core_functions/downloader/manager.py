@@ -242,9 +242,14 @@ class DownloadManager(QObject):
             self.delete(download_item["id"])
         logger.info("Deleted downloads with status: %s", status)
 
-    def delete_all(self):
+    def delete_all(self, delete_files: bool = True):
         logger.debug("Deleting all downloads")
         self.db.delete_all()
+        if delete_files:
+            for info in self._downloads.values():
+                file_path = Path(info["folder_path"]) / info["filename"]
+                file_path.unlink(missing_ok=True)
+                logger.info("Deleted file: %s", file_path)
         self._downloads.clear()
         logger.info("All downloads deleted")
 
