@@ -432,13 +432,13 @@ class DownloadManagerDialog(QDialog):
             new_downloads = []
             
             # Iterate through the range of surahs
-            for surah_num in range(from_surah.number, to_surah.number + 1):                                
-                for ayah_num in range(from_ayah_global, to_ayah_global + 1):
-                    url = self.ayah_reciters.get_url(reciter["id"], surah_num, ayah_num)
+            for surah in surahs[from_surah.number - 1 : to_surah.number]:
+                for ayah_num in range(1, surah.ayah_count + 1):
+                    url = self.ayah_reciters.get_url(reciter["id"], surah.number, ayah_num)
                     if url:
                         new_downloads.append({
                             "reciter_id": reciter["id"],
-                            "surah_number": surah_num,
+                            "surah_number": surah.number,
                             "ayah_number": ayah_num,
                             "url": url,
                         })
