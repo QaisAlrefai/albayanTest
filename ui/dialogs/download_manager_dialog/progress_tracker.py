@@ -1,74 +1,84 @@
-
-from typing import List, Union, Optional
+from typing import List, Union
 from PyQt6.QtWidgets import QProgressBar
 from core_functions.downloader.status import DownloadStatus
-from core_functions.downloader.manager import DownloadManager  # افترض اسم الكلاس
+from core_functions.downloader.manager import DownloadManager
+
 
 class SessionProgressBar(QProgressBar):
     """
-    A QProgressBar that tracks the overall download progress across one or more DownloadManager instances.
-    - Considers only PENDING and DOWNLOADING as in-progress.
-    - PAUSED files decrease the in-progress count.
+    A QProgressBar that tracks overall download progress across one or more DownloadManager instances.
+    Shows percentage from 0 to 100.
     """
 
-    def __init__(self, parent = None) -> None:
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
+
         self._managers: List[DownloadManager] = []
         self._total_files: int = 0
         self._completed_files: int = 0
 
         self.setMinimum(0)
+        self.setMaximum(100)
         self.setValue(0)
-        self.setFormat("Completed %v of %m")
+        self.setFormat("%p%")        # يعرض النسبة تلقائيًا
 
     def set_managers(self, managers: Union[DownloadManager, List[DownloadManager]]) -> None:
-        """
-        Assign one or multiple DownloadManager instances to track.
-        :param managers: DownloadManager or list of DownloadManager
-        """
+        """Assign one or multiple managers to track."""
         if not isinstance(managers, list):
             managers = [managers]
+
         self._managers = managers
         self.recalculate_totals()
 
-        # Connect signals for automatic updates
         for mgr in self._managers:
             mgr.download_finished.connect(self._on_file_finished)
             mgr.status_changed.connect(self._on_status_changed)
 
     def recalculate_totals(self) -> None:
-        """Recompute total files in-progress for the session."""
+        """Recompute total downloads that belong to the session."""
         self._total_files = 0
 
         for mgr in self._managers:
-            self._total_files += len(mgr.get_downloads([DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED]))
+            downloads = mgr.get_downloads([
+                DownloadStatus.PENDING,
+                DownloadStatus.DOWNLOADING,
+                DownloadStatus.PAUSED
+            ])
+            self._total_files += len(downloads)
 
-        self.setMaximum(self._total_files + self._completed_files)
-        self.setValue(self._completed_files)
+        self._update_progress()
+
+    def _update_progress(self) -> None:
+        """Calculate percentage and update the bar."""
+        if self._total_files == 0:
+            self.setValue(0)
+            return
+
+        percentage = int((self._completed_files / self._total_files) * 100)
+        percentage = max(0, min(100, percentage))  # clamp for safety
+
+        self.setValue(percentage)
 
     def increment(self, count: int = 1) -> None:
-        """Manually increment completed files count."""
+        """Increase completed counter."""
         self._completed_files += count
-        self.setValue(self._completed_files)
+        self._update_progress()
 
     def decrement(self, count: int = 1) -> None:
-        """Manually decrease completed files count (e.g., when a file is paused/cancelled)."""
+        """Decrease completed counter (pause/cancel/error)."""
         self._completed_files = max(0, self._completed_files - count)
-        self.setValue(self._completed_files)
+        self._update_progress()
 
     def finish_session(self) -> None:
-        """Reset the session progress when all files are done."""
+        """Reset progress bar."""
         self._completed_files = 0
         self._total_files = 0
-        self.setMaximum(0)
-
 
     def _on_file_finished(self, download_id: int) -> None:
-        """Slot for download_finished signal."""
+        """Triggered when a download finishes."""
         self.increment()
 
     def _on_status_changed(self, download_id: int, status: DownloadStatus) -> None:
-        """Slot for status_changed signal."""
-        # If file is paused, decrease in-progress count
+        """Triggered when a download changes state."""
         if status in (DownloadStatus.PAUSED, DownloadStatus.CANCELLED, DownloadStatus.ERROR):
             self.decrement()
