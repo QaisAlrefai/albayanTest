@@ -5,6 +5,10 @@ from functools import lru_cache
 from abc import ABC, abstractmethod
 from exceptions.database import DBNotFoundError
 from utils.logger import LoggerManager
+from core_functions.downloader.db import DownloadDB
+from core_functions.downloader.models import DownloadSurahs, DownloadAyahs
+from core_functions.downloader.status import DownloadStatus
+from utils.paths import paths
 
 logger = LoggerManager.get_logger(__name__)
 
@@ -93,6 +97,7 @@ class RecitersManager(ABC):
 class SurahReciter(RecitersManager):
     def __init__(self, db_path: str, table_name: str ="moshaf"):
         super().__init__(db_path, table_name)
+        self.download_db = DownloadDB(f"sqlite:///{paths.download_db_path}", DownloadSurahs)
 
     def get_reciters(self):
         reciters = super().get_reciters()
@@ -109,6 +114,17 @@ class SurahReciter(RecitersManager):
     def get_url(self, reciter_id: int, surah_number: int) -> Optional[str]:
         """Fetches the URL for a specific reciter and surah number."""
         logger.debug(f"Getting URL for reciter ID: {reciter_id}, surah number: {surah_number}")
+
+        try:
+            # Check for local file first
+            local_file = self.download_db.find_one(reciter_id=reciter_id, surah_number=surah_number, status=DownloadStatus.COMPLETED)
+            if local_file and os.path.exists(os.path.join(local_file.folder_path, local_file.filename)):
+                file_path = os.path.join(local_file.folder_path, local_file.filename)
+                logger.debug(f"Found local file for Surah: {file_path}")
+                return file_path
+        except Exception as e:
+            logger.error(f"Error checking for local surah file: {e}")
+
         base_url = self._get_base_url(reciter_id)
         if base_url:
             url = f"{base_url}/{surah_number:03}.mp3"
@@ -121,10 +137,22 @@ class SurahReciter(RecitersManager):
 class AyahReciter(RecitersManager):
     def __init__(self, db_path: str, table_name: str ="reciters"):
         super().__init__(db_path, table_name)
+        self.download_db = DownloadDB(f"sqlite:///{paths.download_db_path}", DownloadAyahs)
 
     def get_url(self, reciter_id: int, surah_number: int, aya_number: int) -> Optional[str]:
         """Fetches the URL for a specific reciter, surah number, and ayah number."""
         logger.debug(f"Getting URL for reciter ID: {reciter_id}, surah number: {surah_number}, ayah number: {aya_number}")
+
+        try:
+            # Check for local file first
+            local_file = self.download_db.find_one(reciter_id=reciter_id, surah_number=surah_number, ayah_number=aya_number, status=DownloadStatus.COMPLETED)
+            if local_file and os.path.exists(os.path.join(local_file.folder_path, local_file.filename)):
+                file_path = os.path.join(local_file.folder_path, local_file.filename)
+                logger.debug(f"Found local file for Ayah: {file_path}")
+                return file_path
+        except Exception as e:
+            logger.error(f"Error checking for local ayah file: {e}")
+
         base_url = self._get_base_url(reciter_id)
         if base_url:
             url = f"{base_url}{surah_number:03}{aya_number:03}.mp3"

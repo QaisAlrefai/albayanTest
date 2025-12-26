@@ -67,6 +67,21 @@ class DownloadDB:
                 logger.error(f"Error updating status for download_id {download_id}: {e}")
                 session.rollback()
 
+    def find_one(self, **filters):
+        """Find a single item matching the filters."""
+        logger.debug(f"Finding one item with filters: {filters}")
+        with self.Session() as session:
+            try:
+                item = session.query(self.download_table).filter_by(**filters).first()
+                if item:
+                    # Detach the object from the session to allow it to be used outside
+                    session.expunge(item)
+                    return item
+                return None
+            except SQLAlchemyError as e:
+                logger.error(f"Error finding item with filters {filters}: {e}")
+                return None
+
     def delete(self, download_id: str):
         logger.debug(f"Deleting download item with id: {download_id}")
         with self.Session() as session:
