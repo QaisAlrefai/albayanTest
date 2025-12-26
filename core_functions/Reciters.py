@@ -90,6 +90,10 @@ class RecitersManager(ABC):
         return None
 
     @abstractmethod
+    def check_local_file(self, reciter_id: int, surah_number: int, aya_number: Optional[int] = None) -> Optional[str]:
+        pass
+
+    @abstractmethod
     def get_url(self, reciter_id: int, surah_number: int) -> Optional[str]:
         pass
 
@@ -111,19 +115,30 @@ class SurahReciter(RecitersManager):
             reciter_data["available_suras"] = sorted(map(int, reciter_data["available_suras"].split(",")))
         return reciter_data
 
+
+    def check_local_file(self, reciter_id: int, surah_number: int, aya_number: Optional[int] = None) -> Optional[str]:
+        """Checks for a local file for the given reciter and surah number."""
+        logger.debug(f"Checking local file for reciter ID: {reciter_id}, surah number: {surah_number}")
+        try:
+            local_file = self.download_db.find_one(reciter_id=reciter_id, surah_number=surah_number, status=DownloadStatus.COMPLETED)
+            if local_file and os.path.exists(os.path.join(local_file.folder_path, local_file.filename)):
+                file_path = os.path.join(local_file.folder_path, local_file.filename)
+                logger.debug(f"Found local file: {file_path}")
+                return file_path
+            else:
+                logger.debug(f"No local file found for reciter ID: {reciter_id}, surah number: {surah_number}")
+        except Exception as e:
+            logger.error(f"Error checking for local surah file: {e}")
+        return None
+    
     def get_url(self, reciter_id: int, surah_number: int) -> Optional[str]:
         """Fetches the URL for a specific reciter and surah number."""
         logger.debug(f"Getting URL for reciter ID: {reciter_id}, surah number: {surah_number}")
 
-        try:
-            # Check for local file first
-            local_file = self.download_db.find_one(reciter_id=reciter_id, surah_number=surah_number, status=DownloadStatus.COMPLETED)
-            if local_file and os.path.exists(os.path.join(local_file.folder_path, local_file.filename)):
-                file_path = os.path.join(local_file.folder_path, local_file.filename)
-                logger.debug(f"Found local file for Surah: {file_path}")
-                return file_path
-        except Exception as e:
-            logger.error(f"Error checking for local surah file: {e}")
+        # Check for local file first
+        local_file = self.check_local_file(reciter_id, surah_number)
+        if local_file:
+            return local_file
 
         base_url = self._get_base_url(reciter_id)
         if base_url:
@@ -139,21 +154,30 @@ class AyahReciter(RecitersManager):
         super().__init__(db_path, table_name)
         self.download_db = DownloadDB(f"sqlite:///{paths.download_db_path}", DownloadAyahs)
 
+    def check_local_file(self, reciter_id, surah_number, aya_number = None):
+        """Checks for a local file for the given reciter, surah, and ayah number."""
+        logger.debug(f"Checking local file for reciter ID: {reciter_id}, surah number: {surah_number}, ayah number: {aya_number}")
+        try:
+            local_file = self.download_db.find_one(reciter_id=reciter_id, surah_number=surah_number, aya_number=aya_number, status=DownloadStatus.COMPLETED)
+            if local_file and os.path.exists(os.path.join(local_file.folder_path, local_file.filename)):
+                file_path = os.path.join(local_file.folder_path, local_file.filename)
+                logger.debug(f"Found local file: {file_path}")
+                return file_path
+            else:
+                logger.debug(f"No local file found for reciter ID: {reciter_id}, surah number: {surah_number}, ayah number: {aya_number}")
+        except Exception as e:
+            logger.error(f"Error checking for local ayah file: {e}")
+        return None
+
     def get_url(self, reciter_id: int, surah_number: int, aya_number: int) -> Optional[str]:
         """Fetches the URL for a specific reciter, surah number, and ayah number."""
         logger.debug(f"Getting URL for reciter ID: {reciter_id}, surah number: {surah_number}, ayah number: {aya_number}")
 
-        try:
-            # Check for local file first
-            local_file = self.download_db.find_one(reciter_id=reciter_id, surah_number=surah_number, ayah_number=aya_number, status=DownloadStatus.COMPLETED)
-            if local_file and os.path.exists(os.path.join(local_file.folder_path, local_file.filename)):
-                file_path = os.path.join(local_file.folder_path, local_file.filename)
-                logger.debug(f"Found local file for Ayah: {file_path}")
-                return file_path
-        except Exception as e:
-            logger.error(f"Error checking for local ayah file: {e}")
-
-        base_url = self._get_base_url(reciter_id)
+        # Check for local file first
+        local_file = self.check_local_file(reciter_id, surah_number, aya_number)
+        if local_file:
+            return local_file
+        
         if base_url:
             url = f"{base_url}{surah_number:03}{aya_number:03}.mp3"
             logger.debug(f"Generated URL: {url}")
