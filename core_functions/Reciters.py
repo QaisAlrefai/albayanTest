@@ -178,6 +178,7 @@ class AyahReciter(RecitersManager):
         if local_file:
             return local_file
         
+        base_url = self._get_base_url(reciter_id)
         if base_url:
             url = f"{base_url}{surah_number:03}{aya_number:03}.mp3"
             logger.debug(f"Generated URL: {url}")
