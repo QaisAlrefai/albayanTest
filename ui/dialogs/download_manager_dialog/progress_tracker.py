@@ -47,7 +47,6 @@ class SessionProgressBar(QProgressBar):
             self._total_files += len(downloads)
 
         self._update_progress()
-        print(f"SessionProgressBar: Total files to download: {self._total_files}")
 
     def _update_progress(self) -> None:
         """Calculate percentage and update the bar."""
