@@ -229,7 +229,7 @@ class DownloadManagerDialog(QDialog):
             menu.addAction("استئناف", lambda: self.current_manager.resume(self.current_download_id))
 
         # Cancel option if active
-        if current_status not in [DownloadStatus.COMPLETED, DownloadStatus.CANCELLED]:
+        if current_status not in [DownloadStatus.COMPLETED, DownloadStatus.CANCELLED, DownloadStatus.ERROR]:
             menu.addAction("إلغاء التحميل",
             lambda: self.current_manager.cancel(self.current_download_id) 
             if self.confirm_cancel_item(self.current_download_id) else None)
@@ -239,6 +239,8 @@ class DownloadManagerDialog(QDialog):
         elif current_status == DownloadStatus.CANCELLED:
             menu.addAction("بدء التحميل", lambda: self.current_manager.restart(self.current_download_id))
             menu.addAction("بدء تحميل الكل", self.current_manager.restart_all)
+        elif current_status == DownloadStatus.ERROR:
+            menu.addAction("إعادة المحاولة", lambda: self.current_manager.restart(self.current_download_id))
                 
         # Delete option
         menu.addSeparator()

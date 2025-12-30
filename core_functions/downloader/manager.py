@@ -110,25 +110,20 @@ class DownloadManager(QObject):
         logger.info("Added download item: %s", url)
 
     def start(self):
-        """Start processing the download queue."""
+        """Start processing the download queue (PENDING items only)."""
         logger.info("Starting downloading process")
 
         for download_id, info in self._downloads.items():
-            if info["status"] in (DownloadStatus.COMPLETED, DownloadStatus.CANCELLED):
+            # Only start PENDING items. 
+            # Ignore PAUSED, ERROR, COMPLETED, CANCELLED unless explicitly reset to PENDING.
+            if info["status"] != DownloadStatus.PENDING:
+                continue
+            
+            # Check if worker is already running (shouldn't be for PENDING, but safety check)
+            if info.get("worker") and info["worker"].isRunning():
                 continue
 
-            worker = DownloadWorker(
-                info,
-                callbacks={
-                    "progress": self._on_progress,
-                    "finished": self._on_finished,
-                    "status": self._on_status,
-                    "error": self._on_error
-                },
-                manager=self
-            )
-            self._downloads[download_id]["worker"] = worker
-            self.pool.start(worker)
+            self._start_download(download_id)
 
     def _on_progress(self, progress: DownloadProgress):
         self.download_progress.emit(progress)
@@ -280,3 +275,55 @@ class DownloadManager(QObject):
             for info in self._downloads.values()
             if info["status"] in status
         ]
+
+    def has_active_downloads(self) -> bool:
+        """Check if there are any active downloads (DOWNLOADING or PENDING)."""
+        active_statuses = [DownloadStatus.DOWNLOADING, DownloadStatus.PENDING]
+        return bool(self.get_downloads(active_statuses))
+
+    def resume_interrupted_downloads(self):
+        """
+        Resume downloads that were interrupted (status DOWNLOADING or PENDING).
+        Should be called on application startup.
+        """
+        logger.info("Checking for interrupted downloads to resume...")
+        
+        # 1. Downloads stuck in DOWNLOADING state (e.g. app crashed or closed)
+        # We need to reset them to PENDING so they can be picked up by start()
+        # but WITHOUT resetting downloaded_bytes (so they resume).
+        interrupted = self.get_downloads([DownloadStatus.DOWNLOADING, DownloadStatus.PENDING])
+        for download in interrupted:
+            logger.debug(f"resuming interrupted download ID: {download['id']}")
+            self._downloads[download['id']]["status"] = DownloadStatus.PENDING
+            if self.db and self.save_history:
+                self.db.update_status(download['id'], DownloadStatus.PENDING)
+        
+        # 2. PENDING items are already PENDING, so start() will pick them up naturally.
+        
+        # 3. Trigger start to process the queue
+        self.start()
+        
+        count = len(interrupted) + len(self.get_downloads(DownloadStatus.PENDING))
+        logger.info(f"Resumed {count} interrupted/pending downloads.")
+
+    def _start_download(self, download_id: int):
+        """Internal method to start a download worker for a given download ID."""
+        logger.debug("Starting download worker for ID: %d", download_id)
+        if download_id not in self._downloads:
+            logger.warning("Attempted to start download for unknown ID: %d", download_id)
+            return
+
+        worker = DownloadWorker(
+            self._downloads[download_id],
+            callbacks={
+                "progress": self._on_progress,
+                "finished": self._on_finished,
+                "status": self._on_status,
+                "error": self._on_error
+            },
+            manager=self
+        )
+        self._downloads[download_id]["worker"] = worker
+        self.pool.start(worker)
+        logger.info("Download worker started for ID: %d", download_id)
+        

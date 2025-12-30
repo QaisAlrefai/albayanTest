@@ -39,7 +39,31 @@ class MenuBar(QMenuBar):
             "قيس الرفاعي": "ww258148@gmail.com",
             "أحمد بكر": "AhmedBakr593@gmail.com"
         }
+        self._init_download_managers()
         self.create_menu()
+
+    def _init_download_managers(self):
+        """Initialize download managers persistently."""
+        logger.debug("Initializing persistent DownloadManagers.")
+        ayah_db = DownloadDB(f"sqlite:///{paths.download_db_path}", DownloadAyahs)
+        self.ayah_manager = DownloadManager(
+            download_db=ayah_db, 
+            load_history=True, 
+            save_history=True, 
+            max_workers=Config.downloading.files_to_download_at_the_same_time
+        )
+        self.ayah_reciters = AyahReciter(paths.reciters_db)
+        self.ayah_manager.resume_interrupted_downloads()
+
+        surah_db = DownloadDB(f"sqlite:///{paths.download_db_path}", DownloadSurahs)
+        self.surah_manager = DownloadManager(
+            download_db=surah_db, 
+            load_history=True, 
+            save_history=True, 
+            max_workers=Config.downloading.files_to_download_at_the_same_time
+        )
+        self.surah_reciters = SurahReciter(paths.reciters_db)
+        self.surah_manager.resume_interrupted_downloads()
 
     def create_menu(self):
         self.navigation_menu = self.addMenu("التنقل(&M)")
@@ -286,14 +310,29 @@ class MenuBar(QMenuBar):
 
     def open_download_manager(self):
         logger.debug("Opening Download Manager dialog.")
-        ayah_db = DownloadDB(f"sqlite:///{paths.download_db_path}", DownloadAyahs)
-        ayah_manager = DownloadManager(download_db=ayah_db, load_history=True, save_history=True, max_workers=Config.downloading.files_to_download_at_the_same_time)
-        ayah_reciters = AyahReciter(paths.reciters_db)
-        surah_db = DownloadDB(f"sqlite:///{paths.download_db_path}", DownloadSurahs)
-        surah_manager = DownloadManager(download_db=surah_db, load_history=True, save_history=True, max_workers=Config.downloading.files_to_download_at_the_same_time)
-        surah_reciters = SurahReciter(paths.reciters_db)
-        download_dialog = DownloadManagerDialog(self.parent, surah_manager, ayah_manager, surah_reciters, ayah_reciters)
-        download_dialog.open()
+        
+        if hasattr(self, 'download_dialog') and self.download_dialog is not None:
+             if self.download_dialog.isVisible():
+                 self.download_dialog.activateWindow()
+                 logger.debug("Download Manager dialog already open, activating.")
+                 return
+             else:
+                 # If it exists but not visible, it might be closed/hidden. 
+                 # We can reuse it or recreate. Recreating ensures fresh state.
+                 # But if we want to just show it:
+                 # self.download_dialog.show()
+                 # Let's recreate to be safe against previous close state or just recreate.
+                 pass
+
+        # Reuse persistent managers
+        self.download_dialog = DownloadManagerDialog(
+            self.parent, 
+            self.surah_manager, 
+            self.ayah_manager, 
+            self.surah_reciters, 
+            self.ayah_reciters
+        )
+        self.download_dialog.open()
         logger.debug("Download Manager dialog opened.")
 
     def OnTasbihAction(self):
@@ -434,6 +473,14 @@ class MenuBar(QMenuBar):
 
     def quit_application(self):
         logger.info("Quitting application.")
+        
+        # Check active downloads
+        if self.check_active_downloads():
+            if not self.confirm_stop_downloads():
+                logger.debug("Quit cancelled by user due to active downloads.")
+                return
+            self.stop_all_downloads()
+
         if Config.general.auto_save_position_enabled:
             logger.debug("Auto-saving current position.")
             self.parent.OnSaveCurrentPosition()
@@ -445,12 +492,37 @@ class MenuBar(QMenuBar):
         if self.sura_player_window is not None:
             self.sura_player_window.close()
             logger.info("Sura Player window closed.")
+        logger.debug("Closing Download Manager dialog if open.")
+        if hasattr(self, 'download_dialog') and self.download_dialog is not None:
+            self.download_dialog.close()
+            logger.info("Download Manager dialog closed.")
         logger.debug("Freeing audio resources.")
         bass.BASS_Free()
         logger.info("Audio resources freed.")
         logger.debug("Closing main window.")
         QApplication.quit()
         logger.info("Application quit.")
+
+    def check_active_downloads(self) -> bool:
+        """Check if any manager has active downloads."""
+        return self.surah_manager.has_active_downloads() or self.ayah_manager.has_active_downloads()
+
+    def confirm_stop_downloads(self) -> bool:
+        """Show confirmation dialog to stop downloads and exit."""
+        msg_box = QMessageBox(self.parent)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle("تأكيد الخروج")
+        msg_box.setText("هناك تنزيلات قيد التشغيل. هل تريد حقًا الخروج وإيقافها؟")
+        yes_button = msg_box.addButton("خروج", QMessageBox.ButtonRole.AcceptRole)
+        msg_box.addButton("إلغاء", QMessageBox.ButtonRole.RejectRole)
+        msg_box.exec()
+        return msg_box.clickedButton() == yes_button
+
+    def stop_all_downloads(self):
+        """Cancel all active downloads."""
+        logger.info("Stopping all downloads before exit.")
+        self.surah_manager.cancel_all()
+        self.ayah_manager.cancel_all()
 
     def Onopen_log_file(self):
         log_file_path = os.path.join(paths.app_folder, "albayan.log")
