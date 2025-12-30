@@ -703,6 +703,7 @@ class QuranInterface(QMainWindow):
         else:
             logger.debug("Closing application.")
             self.tray_manager.hide_icon() 
+            self.menu_bar.quit_application()
 
     @exception_handler(ui_element=QMessageBox)
     def OnRandomMessages(self, event):

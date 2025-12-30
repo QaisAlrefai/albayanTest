@@ -473,6 +473,7 @@ class MenuBar(QMenuBar):
 
     def quit_application(self):
         logger.info("Quitting application.")
+        print("Quitting application.")
         
         # Check active downloads
         if self.check_active_downloads():
