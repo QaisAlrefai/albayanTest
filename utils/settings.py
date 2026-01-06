@@ -92,11 +92,15 @@ class SurahPlayerSettings(BaseSection):
     surah_repeat_count: int = 1
     action_after_surah: int = 0
 
+
+
 @dataclass
 class DownloadingSettings(BaseSection):
     SECTION_NAME: ClassVar[str] = "downloading"
     files_to_download_at_the_same_time: int = 1
     download_path: str = os.path.join(paths.documents_dir, "Downloads")
+    show_incomplete_download_warning: bool = True
+    offline_playback: bool = True
 
 @dataclass
 class PreferencesSettings(BaseSection):
