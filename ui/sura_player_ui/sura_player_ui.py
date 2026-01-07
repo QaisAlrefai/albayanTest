@@ -304,7 +304,7 @@ class SuraPlayerWindow(QMainWindow):
             logger.debug("New Surah or Reciter detected, resetting repeat counter.")
             self.current_surah_repeat_count = 0
             self.last_played_surah = (reciter_id, surah_number)
-        url = self.reciters.get_url(reciter_id, surah_number)
+        url = self.reciters.get_url(reciter_id, surah_number, offline_playback=Config.downloading.offline_playback)
         self.audio_player_thread.set_audio_url(url)
         self.audio_player_thread.start()
         logger.info(f"Playing Surah {surah_number} by reciter {reciter_id}, {self.surah_combo.currentText()}, {self.reciter_combo.currentText()}")

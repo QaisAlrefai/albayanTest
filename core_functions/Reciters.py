@@ -131,15 +131,16 @@ class SurahReciter(RecitersManager):
             logger.error(f"Error checking for local surah file: {e}")
         return None
     
-    def get_url(self, reciter_id: int, surah_number: int) -> Optional[str]:
+    def get_url(self, reciter_id: int, surah_number: int, offline_playback: bool = False) -> Optional[str]:
         """Fetches the URL for a specific reciter and surah number."""
         logger.debug(f"Getting URL for reciter ID: {reciter_id}, surah number: {surah_number}")
 
-        # Check for local file first
-        local_file = self.check_local_file(reciter_id, surah_number)
-        if local_file:
-            return local_file
-
+        if offline_playback:
+            # Check for local file first
+            local_file = self.check_local_file(reciter_id, surah_number)
+            if local_file:
+                return local_file
+            
         base_url = self._get_base_url(reciter_id)
         if base_url:
             url = f"{base_url}/{surah_number:03}.mp3"
@@ -169,15 +170,16 @@ class AyahReciter(RecitersManager):
             logger.error(f"Error checking for local ayah file: {e}")
         return None
 
-    def get_url(self, reciter_id: int, surah_number: int, aya_number: int) -> Optional[str]:
+    def get_url(self, reciter_id: int, surah_number: int, aya_number: int, offline_playback: bool = False) -> Optional[str]:
         """Fetches the URL for a specific reciter, surah number, and ayah number."""
         logger.debug(f"Getting URL for reciter ID: {reciter_id}, surah number: {surah_number}, ayah number: {aya_number}")
 
-        # Check for local file first
-        local_file = self.check_local_file(reciter_id, surah_number, aya_number)
-        if local_file:
-            return local_file
-        
+        if offline_playback:
+            # Check for local file first
+            local_file = self.check_local_file(reciter_id, surah_number, aya_number)
+            if local_file:
+                return local_file
+            
         base_url = self._get_base_url(reciter_id)
         if base_url:
             url = f"{base_url}{surah_number:03}{aya_number:03}.mp3"

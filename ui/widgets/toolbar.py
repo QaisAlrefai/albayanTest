@@ -198,7 +198,7 @@ class AudioToolBar(QToolBar):
             self.navigation.has_basmala = False
 
         reciter_id = Config.listening.reciter
-        url = self.reciters.get_url(reciter_id, self.navigation.current_surah, self.navigation.current_ayah)
+        url = self.reciters.get_url(reciter_id, self.navigation.current_surah, self.navigation.current_ayah, offline_playback=Config.downloading.offline_playback)
         logger.debug(f"Generated URL: {url}")
         self.audio_thread.set_audio_url(url, send_error_signal=False if self.navigation.current_ayah == 0 else True)
         self.audio_thread.start()
