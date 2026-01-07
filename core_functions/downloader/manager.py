@@ -326,4 +326,3 @@ class DownloadManager(QObject):
         self._downloads[download_id]["worker"] = worker
         self.pool.start(worker)
         logger.info("Download worker started for ID: %d", download_id)
-        

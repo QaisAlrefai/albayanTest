@@ -1,5 +1,6 @@
 
 import os
+import sys
 from PyQt6.QtWidgets import QApplication, QMenuBar, QMenu, QMessageBox
 from PyQt6.QtGui import QIcon, QAction, QKeySequence, QShortcut, QDesktopServices, QActionGroup
 from PyQt6.QtCore import Qt, QUrl
@@ -504,6 +505,7 @@ class MenuBar(QMenuBar):
         logger.debug("Closing main window.")
         QApplication.quit()
         logger.info("Application quit.")
+        sys.exit(0)
         
         return True
 
