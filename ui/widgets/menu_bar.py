@@ -471,9 +471,8 @@ class MenuBar(QMenuBar):
             self.tafaseer_menu.exec()
             logger.debug("Tafaseer menu closed.")
 
-    def quit_application(self):
+    def quit_application(self) -> bool:
         logger.info("Quitting application.")
-        print("Quitting application.")
         
         # Check active downloads
         if self.check_active_downloads():
@@ -481,7 +480,7 @@ class MenuBar(QMenuBar):
                 logger.debug("Active downloads found, stopping all without confirmation due to settings.")
             elif not self.confirm_stop_downloads():
                 logger.debug("Quit cancelled by user due to active downloads.")
-                return
+                return False
             self.stop_all_downloads()
 
         if Config.general.auto_save_position_enabled:
@@ -505,6 +504,8 @@ class MenuBar(QMenuBar):
         logger.debug("Closing main window.")
         QApplication.quit()
         logger.info("Application quit.")
+        
+        return True
 
     def check_active_downloads(self) -> bool:
         """Check if any manager has active downloads."""

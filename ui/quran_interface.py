@@ -701,9 +701,10 @@ class QuranInterface(QMainWindow):
             logger.debug("notification shown.")
             logger.debug("App minimized to tray.")
         else:
-            logger.debug("Closing application.")
-            self.tray_manager.hide_icon() 
-            self.menu_bar.quit_application()
+            if self.menu_bar.quit_application():
+                self.tray_manager.hide_icon() 
+            else:
+                event.ignore()
 
     @exception_handler(ui_element=QMessageBox)
     def OnRandomMessages(self, event):
