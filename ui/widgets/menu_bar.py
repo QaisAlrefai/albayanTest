@@ -477,7 +477,9 @@ class MenuBar(QMenuBar):
         
         # Check active downloads
         if self.check_active_downloads():
-            if not self.confirm_stop_downloads():
+            if not Config.downloading.show_incomplete_download_warning:
+                logger.debug("Active downloads found, stopping all without confirmation due to settings.")
+            elif not self.confirm_stop_downloads():
                 logger.debug("Quit cancelled by user due to active downloads.")
                 return
             self.stop_all_downloads()
