@@ -90,7 +90,7 @@ class DownloadManagerDialog(QDialog):
 
         # === Buttons ===
         btn_layout = QHBoxLayout()
-        self.btn_download = QPushButton("تنزيل")
+        self.btn_download = QPushButton("تنزيل جديد")
         self.btn_delete = QPushButton("حذف")
         self.btn_close = QPushButton("إغلاق")
 

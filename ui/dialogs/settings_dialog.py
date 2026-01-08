@@ -346,7 +346,7 @@ class SettingsDialog(QDialog):
 
         self.offline_playback_checkbox = QCheckBox("تشغيل السور والآيات التي تم تنزيلها دون إنترنت")
 
-        self.show_incomplete_download_warning_checkbox = QCheckBox("إظهار تحذير عند إغلاق البيان وفتحه في حال وجود ملفات لم يكتمل تنزيلها")
+        self.show_incomplete_download_warning_checkbox = QCheckBox("إظهار تحذير عند إغلاق البيان  في حال وجود ملفات لم يكتمل تنزيلها")
 
 
 
