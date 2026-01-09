@@ -4,6 +4,8 @@ from typing import List, Dict, Optional, Union
 from pathlib import Path
 from PyQt6.QtCore import QObject, QThreadPool, pyqtSignal
 
+from core_functions import info
+
 from .worker import DownloadWorker
 from .status import DownloadStatus, DownloadProgress
 from .db import DownloadDB
@@ -120,7 +122,7 @@ class DownloadManager(QObject):
                 continue
             
             # Check if worker is already running (shouldn't be for PENDING, but safety check)
-            if info.get("worker") and info["worker"].isRunning():
+            if info.get("worker") and info["worker"].is_running():
                 continue
 
             self._start_download(download_id)
@@ -171,26 +173,41 @@ class DownloadManager(QObject):
         if worker := self._downloads.get(download_id, {}).get("worker"):
             worker.cancel()            
 
+    def _start_download(self, download_id: int):
+        """Internal method to start a download worker for a given download ID."""
+        logger.debug("Starting download worker for ID: %d", download_id)
+        if download_id not in self._downloads:
+            logger.warning("Attempted to start download for unknown ID: %d", download_id)
+            return
+
+        worker = DownloadWorker(
+            self._downloads[download_id],
+            callbacks={
+                "progress": self._on_progress,
+                "finished": self._on_finished,
+                "status": self._on_status,
+                "error": self._on_error
+            },
+            manager=self
+        )
+        self._downloads[download_id]["worker"] = worker
+        self.pool.start(worker)
+        logger.info("Download worker started for ID: %d", download_id)
+
     def restart(self, download_id: int):
         logger.debug("Restarting download ID: %d", download_id)
-        if download_id in self._downloads:
-            self._downloads[download_id]["status"] = DownloadStatus.PENDING
-            self._downloads[download_id]["downloaded_bytes"] = 0
-            if self.db and self.save_history:
-                self.db.update_status(download_id, DownloadStatus.PENDING)
-            self._downloads[download_id]["worker"] = DownloadWorker(
-                self._downloads[download_id],
-                callbacks={
-                    "progress": self._on_progress,
-                    "finished": self._on_finished,
-                    "status": self._on_status,
-                    "error": self._on_error
-                },
-                manager=self
-            )
-            self.pool.start(self._downloads[download_id]["worker"])
-        else:
-            logger.warning("Attempted to restart non-existent download ID: %d", download_id)
+
+        info = self._downloads.get(download_id)
+        if not info:
+            return
+        
+        info["status"] = DownloadStatus.PENDING
+        info["downloaded_bytes"] = 0
+
+        if self.db and self.save_history:
+            self.db.update_status(download_id, DownloadStatus.PENDING)
+
+        self._start_download(download_id)
 
     def pause_all(self):
         logger.info("Pausing all downloads")
@@ -305,24 +322,3 @@ class DownloadManager(QObject):
         
         count = len(interrupted) + len(self.get_downloads(DownloadStatus.PENDING))
         logger.info(f"Resumed {count} interrupted/pending downloads.")
-
-    def _start_download(self, download_id: int):
-        """Internal method to start a download worker for a given download ID."""
-        logger.debug("Starting download worker for ID: %d", download_id)
-        if download_id not in self._downloads:
-            logger.warning("Attempted to start download for unknown ID: %d", download_id)
-            return
-
-        worker = DownloadWorker(
-            self._downloads[download_id],
-            callbacks={
-                "progress": self._on_progress,
-                "finished": self._on_finished,
-                "status": self._on_status,
-                "error": self._on_error
-            },
-            manager=self
-        )
-        self._downloads[download_id]["worker"] = worker
-        self.pool.start(worker)
-        logger.info("Download worker started for ID: %d", download_id)

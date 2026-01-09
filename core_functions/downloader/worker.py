@@ -26,6 +26,7 @@ class DownloadWorker(QRunnable):
         self.url = item_data["url"]
         self.download_id = item_data["id"]
 
+        self._running = False
         self._paused = False
         self._cancelled = False
 
@@ -35,11 +36,14 @@ class DownloadWorker(QRunnable):
     def run(self) -> None:
         logger.debug(f"[Download Start] ID={self.download_id}")
         try:
+            self._running = True
             self._download_file()
         except Exception as e:
             logger.exception(f"[Download Error] ID={self.download_id}")
             self.callbacks["status"](self.download_id, DownloadStatus.ERROR)
             self.callbacks["error"](self.download_id, str(e))
+        finally:
+            self._running = False
 
     def _download_file(self) -> None:
         os.makedirs(self.folder_path, exist_ok=True)
@@ -110,6 +114,9 @@ class DownloadWorker(QRunnable):
                     "file_hash": file_hash,
                     "status": DownloadStatus.COMPLETED
                 })
+
+def is_running(self) -> bool:
+        return self._running
 
     def pause(self) -> None:
         logger.debug(f"[Paused] ID={self.download_id}")
