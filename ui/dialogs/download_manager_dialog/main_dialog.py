@@ -409,6 +409,7 @@ class DownloadManagerDialog(QDialog):
                     "url": self.surah_reciters.get_url(reciter["id"], num),
                 }
                 for num in range(from_surah.number, to_surah.number + 1)
+                if num in reciter["available_surahs"]
             ]
 
             path = F"{Config.downloading.download_path}/{reciter['id']}"

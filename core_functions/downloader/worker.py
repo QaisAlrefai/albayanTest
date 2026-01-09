@@ -115,7 +115,7 @@ class DownloadWorker(QRunnable):
                     "status": DownloadStatus.COMPLETED
                 })
 
-def is_running(self) -> bool:
+    def is_running(self) -> bool:
         return self._running
 
     def pause(self) -> None:
