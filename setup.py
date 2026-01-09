@@ -60,10 +60,10 @@ def build_setup(script_name="Albayan.py", build_dir="albayan_build", version="4.
         executables=[
             Executable(
                 script_name,
-                base="Win32GUI" if sys.platform == "win32" else None,
+                base="gui",
                 target_name="Albayan.exe",
                 icon="Albayan.ico",
-                copyright="2025 tecwindow"
+                copyright="2026 tecwindow"
             )
         ]
     )
