@@ -1,11 +1,14 @@
-from typing import List, Dict, Optional
+from pathlib import Path
+import os
+import subprocess
+from typing import List, Dict, Optional, Union
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QMessageBox,
     QPushButton, QLabel, QLineEdit, QListWidget,
     QListWidgetItem, QMenu
 )
-from PyQt6.QtCore import Qt
-
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QDesktopServices
 from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
 from core_functions.Reciters import RecitersManager
@@ -218,37 +221,73 @@ class DownloadManagerDialog(QDialog):
         if not self.current_download_item:
             logger.warning("No download item selected for context menu.")
             return
-        
+
         menu = QMenu(self)
-        current_status = self.current_manager.get_download(self.current_download_id)["status"]
+        download_item = self.current_manager.get_download(self.current_download_id)
+        current_status = download_item["status"]
+        download_item = self.current_manager.get_download(self.current_download_id)
+        file_path = Path(download_item["folder_path"]) / download_item["filename"]
+
 
         # Pause / Resume depending on state
         if current_status == DownloadStatus.DOWNLOADING:
             menu.addAction("إيقاف مؤقت", lambda: self.current_manager.pause(self.current_download_id))
         elif current_status == DownloadStatus.PAUSED:
             menu.addAction("استئناف", lambda: self.current_manager.resume(self.current_download_id))
-
-        # Cancel option if active
-        if current_status not in [DownloadStatus.COMPLETED, DownloadStatus.CANCELLED, DownloadStatus.ERROR]:
-            menu.addAction("إلغاء التنزيل",
-            lambda: self.current_manager.cancel(self.current_download_id) 
-            if self.confirm_cancel_item(self.current_download_id) else None)
-            menu.addAction("إلغاء تنزيل الكل",
-            lambda: self.current_manager.cancel_all() 
-            if self.confirm_cancel_all() else None)
         elif current_status == DownloadStatus.CANCELLED:
             menu.addAction("بدء التنزيل", lambda: self.current_manager.restart(self.current_download_id))
             menu.addAction("بدء تنزيل الكل", self.current_manager.restart_all)
         elif current_status == DownloadStatus.ERROR:
             menu.addAction("إعادة المحاولة", lambda: self.current_manager.restart(self.current_download_id))
-                
+
+        # Options for completed downloads
+        if current_status == DownloadStatus.COMPLETED:
+            if file_path.exists():
+                menu.addAction(
+                    "تشغيل في المشغل الافتراضي",
+                    lambda: self.open_in_default_player(file_path)
+                )
+                menu.addAction(
+                    "فتح في المجلد",
+                    lambda: self.open_containing_folder(file_path)
+                )
+
+        # Cancel option if active
+        if current_status not in [DownloadStatus.COMPLETED, DownloadStatus.CANCELLED, DownloadStatus.ERROR]:
+            menu.addAction(
+                "إلغاء التنزيل",
+                lambda: self.current_manager.cancel(self.current_download_id) 
+                if self.confirm_cancel_item(self.current_download_id) else None
+            )
+            menu.addAction(
+                "إلغاء تنزيل الكل",
+                lambda: self.current_manager.cancel_all() 
+                if self.confirm_cancel_all() else None
+            )
+
         # Delete option
         menu.addSeparator()
-        action_delete = menu.addAction("حذف العنصر المحدد", self.delete_selected_item)
+        menu.addAction("حذف العنصر المحدد", self.delete_selected_item)
 
         menu.setAccessibleName("الإجراءات")
         menu.setFocus()
         menu.exec(self.list_widget.mapToGlobal(pos))
+
+
+    def open_in_default_player(self, file_path: Union[str, Path]):
+        if isinstance(file_path, Path):
+            file_path = str(file_path)
+        if Path(file_path).exists():
+            QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
+
+
+    def open_containing_folder(self, file_path: Union[str, Path]):
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+        folder_path = file_path.parent
+        if folder_path.exists():
+            subprocess.run(f'explorer /select,"{file_path}"', shell=True)
+
 
     def delete_selected_item(self):
         """Delete the currently selected download item."""
