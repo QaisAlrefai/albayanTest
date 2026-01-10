@@ -25,7 +25,7 @@ class NewDownloadDialog(QDialog):
         self.reciters_manager = reciters_manager
 
         # Window settings
-        self.setWindowTitle("تحميل سور" if mode == DownloadMode.SURAH else "تحميل آيات")
+        self.setWindowTitle("تنزيل سور" if mode == DownloadMode.SURAH else "تنزيل آيات")
 
         layout = QVBoxLayout()
         grid = QGridLayout()
@@ -89,7 +89,7 @@ class NewDownloadDialog(QDialog):
 
         # Control buttons
         btn_layout = QHBoxLayout()
-        btn_download = QPushButton("تحميل")
+        btn_download = QPushButton("بدء التنزيل")
         btn_download.clicked.connect(self.accept)
         btn_close = QPushButton("إغلاق")
         btn_close.clicked.connect(self.close)

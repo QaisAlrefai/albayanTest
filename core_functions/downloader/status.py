@@ -17,7 +17,7 @@ class DownloadStatus(Enum):
     def _labels_ar(self) -> Dict[str, str]:
             return {
             self.PENDING: "قيد الانتظار",
-            self.DOWNLOADING: "جاري التنزيل",
+            self.DOWNLOADING: "يجري التنزيل",
             self.PAUSED: "متوقف مؤقتًا",
             self.CANCELLED: "تم الإلغاء",
             self.COMPLETED: "مكتمل",

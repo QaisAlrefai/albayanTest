@@ -230,15 +230,15 @@ class DownloadManagerDialog(QDialog):
 
         # Cancel option if active
         if current_status not in [DownloadStatus.COMPLETED, DownloadStatus.CANCELLED, DownloadStatus.ERROR]:
-            menu.addAction("إلغاء التحميل",
+            menu.addAction("إلغاء التنزيل",
             lambda: self.current_manager.cancel(self.current_download_id) 
             if self.confirm_cancel_item(self.current_download_id) else None)
-            menu.addAction("إلغاء تحميل الكل",
+            menu.addAction("إلغاء تنزيل الكل",
             lambda: self.current_manager.cancel_all() 
             if self.confirm_cancel_all() else None)
         elif current_status == DownloadStatus.CANCELLED:
-            menu.addAction("بدء التحميل", lambda: self.current_manager.restart(self.current_download_id))
-            menu.addAction("بدء تحميل الكل", self.current_manager.restart_all)
+            menu.addAction("بدء التنزيل", lambda: self.current_manager.restart(self.current_download_id))
+            menu.addAction("بدء تنزيل الكل", self.current_manager.restart_all)
         elif current_status == DownloadStatus.ERROR:
             menu.addAction("إعادة المحاولة", lambda: self.current_manager.restart(self.current_download_id))
                 
@@ -334,8 +334,8 @@ class DownloadManagerDialog(QDialog):
 
         msg_box = QMessageBox(self)
         msg_box.setIcon(QMessageBox.Icon.Warning)
-        msg_box.setWindowTitle("تأكيد إلغاء التحميل")
-        msg_box.setText(f"هل أنت متأكد من إلغاء تحميل العنصر التالي؟\n\n{full_title}")
+        msg_box.setWindowTitle("تأكيد إلغاء التنزيل")
+        msg_box.setText(f"هل أنت متأكد من إلغاء تنزيل العنصر التالي؟\n\n{full_title}")
         yes_button = msg_box.addButton("نعم", QMessageBox.ButtonRole.AcceptRole)
         no_button =msg_box.addButton("لا", QMessageBox.ButtonRole.RejectRole)
         msg_box.exec()
