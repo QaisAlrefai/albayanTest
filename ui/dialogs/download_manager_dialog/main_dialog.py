@@ -268,10 +268,84 @@ class DownloadManagerDialog(QDialog):
         # Delete option
         menu.addSeparator()
         menu.addAction("حذف العنصر المحدد", self.delete_selected_item)
+        menu.addAction("معلومات العنصر المحدد", self.show_selected_item_info)
+
+
 
         menu.setAccessibleName("الإجراءات")
         menu.setFocus()
         menu.exec(self.list_widget.mapToGlobal(pos))
+
+    def show_selected_item_info(self):
+        """
+        Get the selected download ID,
+        fetch full row from DB using get_download,
+        and format & display the information.
+        """
+        download_id = self.current_download_id
+        if download_id is None:
+            logger.warning("No download selected.")
+            return
+
+        # get full row as dict
+        data = self.current_manager.get_download(download_id)
+
+        if not data:
+            logger.warning(f"No data found for download ID {download_id}")
+            return
+        formatted_text, window_title = self.format_download_info(data)
+        print(f"===== {window_title} =====")
+        print(formatted_text)
+
+
+    def format_download_info(self, data: dict) -> (str, str):
+        """
+        Format a download item (Surah or Ayah) into a clean text for display.
+        Returns:
+            formatted_text: str  # نص المعلومات
+            window_title: str    # عنوان النافذة
+        """
+
+        surahs = self.parent.quran_manager.get_surahs()
+        surah_number = data.get("surah_number")
+        is_ayah = data.get("ayah_number") is not None
+
+        # Reciter name
+        reciter = self.current_reciters_manager.get_reciter(data.get("reciter_id"))
+        reciter_name = reciter.get("display_text", "غير معروف") if reciter else "غير معروف"
+
+        # Surah name
+        surah_name = surahs[surah_number - 1].name if surah_number and 0 < surah_number <= len(surahs) else "غير معروف"
+
+        # Status (Arabic only)
+        status_obj = data.get("status")
+        status_text = status_obj.label if status_obj else "غير معروف"
+
+        # Build formatted text
+        lines = [f"نوع العنصر: {'آية.' if is_ayah else 'سورة.'}",
+                 f"اسم الملف: {data.get('filename', 'غير معروف')}.",
+                 f"مسار الملف: {data.get('folder_path', 'غير معروف')}.",
+                 f"الحالة: {status_text}."]
+
+        # Add file size only if greater than zero
+        size_text = data.get("size_text")
+        if size_text and not size_text.startswith("0"):
+            lines.insert(2, f"حجم الملف: {size_text}.")
+
+        if is_ayah:
+            lines.append(f"رقم الآية: {data.get('ayah_number', 'غير معروف')}.")
+
+        lines += [
+            f"رقم السورة: {surah_number if surah_number else 'غير معروف'}.",
+            f"اسم السورة: {surah_name}.",
+            f"القارئ: {reciter_name}.",
+            f"الرابط: {data.get('url', 'غير معروف')}."
+        ]
+
+        window_title = f"معلومات ملف {data.get('filename', 'غير معروف')}"
+        return "\n".join(lines), window_title
+
+
 
 
     def open_in_default_player(self, file_path: Union[str, Path]):
