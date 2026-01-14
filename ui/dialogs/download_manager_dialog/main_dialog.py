@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QDesktopServices
+from ui.dialogs.info_dialog import InfoDialog
 from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
 from core_functions.Reciters import RecitersManager
@@ -294,8 +295,8 @@ class DownloadManagerDialog(QDialog):
             logger.warning(f"No data found for download ID {download_id}")
             return
         formatted_text, window_title = self.format_download_info(data)
-        print(f"{window_title} =====")
-        print(formatted_text)
+        InfoDialog(self, window_title, window_title, formatted_text).open()
+
 
 
     def format_download_info(self, data: dict) -> (str, str):
@@ -304,7 +305,7 @@ class DownloadManagerDialog(QDialog):
         surahs = self.parent.quran_manager.get_surahs()
         reciter = self.current_reciters_manager.get_reciter(data.get("reciter_id"))
 
-        window_title = f"معلومات ملف: {data.get('filename', 'غير معروف')}"
+        window_title = f"معلومات ملف {data.get('filename', 'غير معروف')}"
 
         return (
             "\n".join([
