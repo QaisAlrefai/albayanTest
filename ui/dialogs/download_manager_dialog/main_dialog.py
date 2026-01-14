@@ -299,7 +299,7 @@ class DownloadManagerDialog(QDialog):
 
 
 
-    def format_download_info(self, data: dict) -> (str, str):
+    def format_download_info(self, data: dict) -> tuple[str, str]:
         """Format a download item (Surah or Ayah) into a clean text for display entirely inside f-strings."""
 
         surahs = self.parent.quran_manager.get_surahs()
@@ -325,21 +325,16 @@ class DownloadManagerDialog(QDialog):
             window_title
         )
 
-
     def open_in_default_player(self, file_path: Union[str, Path]):
-        if isinstance(file_path, Path):
-            file_path = str(file_path)
-        if Path(file_path).exists():
+        file_path = Path(file_path) if isinstance(file_path, str) else file_path
+        if file_path.exists():
             QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
 
-
     def open_containing_folder(self, file_path: Union[str, Path]):
-        if isinstance(file_path, str):
-            file_path = Path(file_path)
+        file_path = Path(file_path) if isinstance(file_path, str) else file_path
         folder_path = file_path.parent
         if folder_path.exists():
             subprocess.run(f'explorer /select,"{file_path}"', shell=True)
-
 
     def delete_selected_item(self):
         """Delete the currently selected download item."""
