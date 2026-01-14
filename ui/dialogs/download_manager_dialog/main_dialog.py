@@ -294,58 +294,35 @@ class DownloadManagerDialog(QDialog):
             logger.warning(f"No data found for download ID {download_id}")
             return
         formatted_text, window_title = self.format_download_info(data)
-        print(f"===== {window_title} =====")
+        print(f"{window_title} =====")
         print(formatted_text)
 
 
     def format_download_info(self, data: dict) -> (str, str):
-        """
-        Format a download item (Surah or Ayah) into a clean text for display.
-        Returns:
-            formatted_text: str  # نص المعلومات
-            window_title: str    # عنوان النافذة
-        """
+        """Format a download item (Surah or Ayah) into a clean text for display entirely inside f-strings."""
 
         surahs = self.parent.quran_manager.get_surahs()
-        surah_number = data.get("surah_number")
-        is_ayah = data.get("ayah_number") is not None
-
-        # Reciter name
         reciter = self.current_reciters_manager.get_reciter(data.get("reciter_id"))
-        reciter_name = reciter.get("display_text", "غير معروف") if reciter else "غير معروف"
 
-        # Surah name
-        surah_name = surahs[surah_number - 1].name if surah_number and 0 < surah_number <= len(surahs) else "غير معروف"
+        window_title = f"معلومات ملف: {data.get('filename', 'غير معروف')}"
 
-        # Status (Arabic only)
-        status_obj = data.get("status")
-        status_text = status_obj.label if status_obj else "غير معروف"
-
-        # Build formatted text
-        lines = [f"نوع العنصر: {'آية.' if is_ayah else 'سورة.'}",
-                 f"اسم الملف: {data.get('filename', 'غير معروف')}.",
-                 f"مسار الملف: {data.get('folder_path', 'غير معروف')}.",
-                 f"الحالة: {status_text}."]
-
-        # Add file size only if greater than zero
-        size_text = data.get("size_text")
-        if size_text and not size_text.startswith("0"):
-            lines.insert(2, f"حجم الملف: {size_text}.")
-
-        if is_ayah:
-            lines.append(f"رقم الآية: {data.get('ayah_number', 'غير معروف')}.")
-
-        lines += [
-            f"رقم السورة: {surah_number if surah_number else 'غير معروف'}.",
-            f"اسم السورة: {surah_name}.",
-            f"القارئ: {reciter_name}.",
-            f"الرابط: {data.get('url', 'غير معروف')}."
-        ]
-
-        window_title = f"معلومات ملف {data.get('filename', 'غير معروف')}"
-        return "\n".join(lines), window_title
-
-
+        return (
+            "\n".join([
+                f"نوع العنصر: {'آية' if data.get('ayah_number') else 'سورة'}.",
+                f"اسم الملف: {data.get('filename', 'غير معروف')}.",
+                *( [f"حجم الملف: {data.get('size_text')}." ] if data.get('size_text') and not str(data.get('size_text')).startswith('0') else [] ),
+                f"مسار الملف: {data.get('folder_path', 'غير معروف')}.",
+                f"تاريخ الإنشاء: {data.get('created_at').strftime('%Y-%m-%d %H:%M') if hasattr(data.get('created_at'), 'strftime') else (str(data.get('created_at'))[:16] if data.get('created_at') else 'غير معروف')}.",
+                f"تاريخ آخر تعديل: {data.get('updated_at').strftime('%Y-%m-%d %H:%M') if hasattr(data.get('updated_at'), 'strftime') else (str(data.get('updated_at'))[:16] if data.get('updated_at') else 'غير معروف')}.",
+                f"الحالة: {data.get('status').label if data.get('status') else 'غير معروف'}.",
+                *( [f"رقم الآية: {data.get('ayah_number')}." ] if data.get('ayah_number') else [] ),
+                f"رقم السورة: {data.get('surah_number', 'غير معروف')}.",
+                f"اسم السورة: {surahs[data.get('surah_number') - 1].name if data.get('surah_number') and 0 < data.get('surah_number') <= len(surahs) else 'غير معروف'}.",
+                f"القارئ: {reciter.get('display_text', 'غير معروف') if reciter else 'غير معروف'}.",
+                f"الرابط: {data.get('url', 'غير معروف')}."
+            ]),
+            window_title
+        )
 
 
     def open_in_default_player(self, file_path: Union[str, Path]):
