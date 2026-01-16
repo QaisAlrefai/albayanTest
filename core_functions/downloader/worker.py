@@ -71,7 +71,7 @@ class DownloadWorker(QRunnable):
             self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
 
             with open(self.temp_path, file_mode) as f:
-                for chunk in r.iter_content(chunk_size=64 * 1024):
+                for chunk in r.iter_content(chunk_size=256     * 1024):
                     if self._cancelled or self.manager._cancel_all:
                         logger.info(f"[Cancelled] ID={self.download_id}")
                         self.callbacks["status"](self.download_id, DownloadStatus.CANCELLED)
@@ -106,12 +106,12 @@ class DownloadWorker(QRunnable):
             self.callbacks["finished"](self.download_id, self.final_path)
 
             if self.db:
-                file_hash = calculate_sha256(self.final_path)
+                #file_hash = calculate_sha256(self.final_path)
                 self.db.upsert({
                     **self.item,
                     "downloaded_bytes": downloaded_bytes,
                     "total_bytes": total_bytes,
-                    "file_hash": file_hash,
+                    #"file_hash": file_hash,
                     "status": DownloadStatus.COMPLETED
                 })
 

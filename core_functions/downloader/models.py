@@ -25,7 +25,7 @@ class DownloadTableBase(Base):
 
     downloaded_bytes = Column(Integer, default=0)
     total_bytes = Column(Integer, default=0)
-    file_hash = Column(String, nullable=True)
+    #file_hash = Column(String, nullable=True)
 
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
