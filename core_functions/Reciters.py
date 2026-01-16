@@ -52,7 +52,8 @@ class RecitersManager(ABC):
             result = cursor.fetchall()
             logger.info(f"Fetched {len(result)} reciters from the database.")
             return [dict(row) for row in result]
- 
+
+    @lru_cache(maxsize=32)
     def get_reciter(self, id: int) -> dict:
         """Fetches a specific reciter by ID."""
         logger.debug(f"Fetching reciter with ID: {id}")
@@ -108,13 +109,13 @@ class SurahReciter(RecitersManager):
         for reciter in reciters:
             reciter["available_suras"] = sorted(map(int, reciter["available_suras"].split(",")))
         return reciters
-    
+
+    @lru_cache(maxsize=32)    
     def get_reciter(self, id: int) -> dict:
         reciter_data = super().get_reciter(id)
-        if reciter_data:
+        if reciter_data and isinstance(reciter_data["available_suras"], str):
             reciter_data["available_suras"] = sorted(map(int, reciter_data["available_suras"].split(",")))
         return reciter_data
-
 
     def check_local_file(self, reciter_id: int, surah_number: int, aya_number: Optional[int] = None) -> Optional[str]:
         """Checks for a local file for the given reciter and surah number."""
