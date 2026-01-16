@@ -79,6 +79,8 @@ class DownloadManager(QObject):
         if not isinstance(download_items, list):
             raise ValueError("download_items must be a list of dictionaries.")
 
+        # Prepare items for insertion
+        items_to_process = []
         for entry in download_items:
             filename = os.path.basename(entry["url"])
             item_data = {
@@ -89,15 +91,25 @@ class DownloadManager(QObject):
                 "total_bytes": 0,
                 **entry,
             }
+            items_to_process.append(item_data)
 
-            if self.db and self.save_history:
-                download_id = self.db.upsert(item_data)
+        # Bulk insert/upsert to DB if applicable
+        generated_ids = []
+        if self.db and self.save_history:
+            generated_ids = self.db.upsert_many(items_to_process)
+        
+        # Populate memory cache
+        for index, item_data in enumerate(items_to_process):
+            if generated_ids and index < len(generated_ids):
+                download_id = generated_ids[index]
             else:
-                download_id = len(self._downloads) + 1
+                # Fallback or non-DB mode
+                download_id = len(self._downloads) + 1 + index
 
             item_data["id"] = download_id
             item_data["size_text"] = None
             self._downloads[download_id] = item_data
+            
         logger.info("Added %d new download items", len(download_items))
 
     def add_download(self, url: str, download_folder: str, **extra_data):

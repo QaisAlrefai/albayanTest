@@ -202,24 +202,29 @@ class DownloadManagerDialog(QDialog):
         download_items = manager.get_downloads(status)
         surahs = self.parent.quran_manager.get_surahs()
 
-        for item_data in download_items:
-            if search_text and search_text not in item_data["filename"].lower():
-                continue
+        # Optimization: Disable paint events during list update
+        self.list_widget.setUpdatesEnabled(False)
+        try:
+            for item_data in download_items:
+                if search_text and search_text not in item_data["filename"].lower():
+                    continue
 
-            progress = (
-                f"{(item_data['downloaded_bytes'] / item_data['total_bytes'] * 100):.1f}%, " if item_data["total_bytes"] > 0 else "0%, "
-            ) + f", الحجم {item_data.get('size_text') or 'غير معروف'}"
+                progress = (
+                    f"{(item_data['downloaded_bytes'] / item_data['total_bytes'] * 100):.1f}%, " if item_data["total_bytes"] > 0 else "0%, "
+                ) + f", الحجم {item_data.get('size_text') or 'غير معروف'}"
 
-            surah = surahs[item_data["surah_number"] - 1]
-            reciter_display_text = self.current_reciters_manager.get_reciter(item_data["reciter_id"]).get("display_text", "قارئ غير معروف")
-            display_text = f"{item_data['filename']}, {surah.name}, {reciter_display_text}, {item_data['status'].label}"
+                surah = surahs[item_data["surah_number"] - 1]
+                reciter_display_text = self.current_reciters_manager.get_reciter(item_data["reciter_id"]).get("display_text", "قارئ غير معروف")
+                display_text = f"{item_data['filename']}, {surah.name}, {reciter_display_text}, {item_data['status'].label}"
 
-            item = QListWidgetItem(display_text)
-            item.setData(Qt.ItemDataRole.UserRole, item_data['id'])
-            item.setData(Qt.ItemDataRole.AccessibleDescriptionRole, progress)
-            item.setToolTip(progress)
-            self.list_widget.addItem(item)
-            self.item_map[item_data['id']] = item
+                item = QListWidgetItem(display_text)
+                item.setData(Qt.ItemDataRole.UserRole, item_data['id'])
+                item.setData(Qt.ItemDataRole.AccessibleDescriptionRole, progress)
+                item.setToolTip(progress)
+                self.list_widget.addItem(item)
+                self.item_map[item_data['id']] = item
+        finally:
+            self.list_widget.setUpdatesEnabled(True)
 
     def show_context_menu(self, pos):
         """Show context menu for the selected download item."""
@@ -365,8 +370,6 @@ class DownloadManagerDialog(QDialog):
 
         self.update_list()
 
-
-
     def cancel_current_item(self):
         if self.user_message_service.confirm(
             "تأكيد إلغاء التنزيل",
@@ -380,7 +383,6 @@ class DownloadManagerDialog(QDialog):
             "هل أنت متأكد من إلغاء جميع التنزيلات؟",
         ):
             self.current_manager.cancel_all()
-
 
     def delete_all(self):
         if self.user_message_service.confirm(

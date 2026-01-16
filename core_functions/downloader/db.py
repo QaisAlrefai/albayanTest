@@ -34,6 +34,39 @@ class DownloadDB:
                 session.rollback()
                 return None
 
+    def upsert_many(self, items: list[dict]) -> list[int]:
+        """
+        Upsert multiple items in a single transaction.
+        Returns a list of IDs for the items in the same order.
+        """
+        logger.debug(f"Upserting {len(items)} items")
+        ids = []
+        with self.Session() as session:
+            try:
+                for item_data in items:
+                     obj = session.query(self.download_table).filter_by(id=item_data.get("id")).first()
+                     if obj:
+                         for key, value in item_data.items():
+                             setattr(obj, key, value)
+                     else:
+                         obj = self.download_table(**item_data)
+                         session.add(obj)
+                     
+                     # We need to flush to get the ID if it's new, but we don't want to commit yet strictly speaking
+                     # However, for massive bulk, flush per item might be slow?
+                     # Actually flush is faster than commit. 
+                     # But for 100 items, flush every time is O(N).
+                     # BUT, we need the ID to return it.
+                     session.flush()
+                     ids.append(obj.id)
+
+                session.commit()
+                return ids
+            except SQLAlchemyError as e:
+                 logger.error(f"Error batch upserting download items: {e}")
+                 session.rollback()
+                 return []
+
     def all(self) -> list[DownloadTableBase]:
         logger.debug("Fetching all download items")
         with self.Session() as session:

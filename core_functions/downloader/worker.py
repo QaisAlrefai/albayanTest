@@ -91,13 +91,13 @@ class DownloadWorker(QRunnable):
                             self.callbacks["progress"](progress)
                             self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
                             
-                        if self.db:
-                            self.db.upsert({
-                                **self.item,
-                                "downloaded_bytes": downloaded_bytes,
-                                "total_bytes": total_bytes,
-                                "status": DownloadStatus.DOWNLOADING
-                            })
+                            if self.db:
+                                self.db.upsert({
+                                    **self.item,
+                                    "downloaded_bytes": downloaded_bytes,
+                                    "total_bytes": total_bytes,
+                                    "status": DownloadStatus.DOWNLOADING
+                                })
 
         if not self._cancelled and not self.manager._cancel_all:
             os.replace(self.temp_path, self.final_path)
