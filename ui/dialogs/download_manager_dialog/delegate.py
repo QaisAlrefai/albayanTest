@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QStyledItemDelegate, QStyleOptionViewItem, QStyle
 from PyQt6.QtCore import Qt, QSize, QRect, QEvent
 from PyQt6.QtGui import QPainter, QColor
 from core_functions.downloader.status import DownloadStatus
-from core_functions.downloader.download_model import DownloadListModel
+from .download_model import DownloadListModel
 
 class DownloadDelegate(QStyledItemDelegate):
     """

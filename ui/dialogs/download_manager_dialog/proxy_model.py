@@ -1,7 +1,7 @@
 
 from PyQt6.QtCore import QSortFilterProxyModel, Qt, QModelIndex
 from core_functions.downloader.status import DownloadStatus
-from core_functions.downloader.download_model import DownloadListModel
+from .download_model import DownloadListModel
 
 class DownloadProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
