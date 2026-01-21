@@ -18,6 +18,7 @@ class DownloadManager(QObject):
     download_finished = pyqtSignal(int, str)                      # id, file_path
     error = pyqtSignal(int, str)                         # id, error message
     status_changed = pyqtSignal(int, DownloadStatus)     # id, new status
+    downloads_added = pyqtSignal(list)                   # list of new download items
 
     def __init__(
         self,
@@ -99,6 +100,7 @@ class DownloadManager(QObject):
             generated_ids = self.db.upsert_many(items_to_process)
         
         # Populate memory cache
+        new_items = []
         for index, item_data in enumerate(items_to_process):
             if generated_ids and index < len(generated_ids):
                 download_id = generated_ids[index]
@@ -109,7 +111,11 @@ class DownloadManager(QObject):
             item_data["id"] = download_id
             item_data["size_text"] = None
             self._downloads[download_id] = item_data
+            new_items.append(item_data)
             
+        if new_items:
+            self.downloads_added.emit(new_items)
+
         logger.info("Added %d new download items", len(download_items))
 
     def add_download(self, url: str, download_folder: str, **extra_data):

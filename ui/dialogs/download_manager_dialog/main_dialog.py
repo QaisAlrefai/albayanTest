@@ -4,10 +4,10 @@ import subprocess
 from typing import List, Dict, Optional, Union
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QMessageBox,
-    QPushButton, QLabel, QLineEdit, QListWidget,
-    QListWidgetItem, QMenu
+    QPushButton, QLabel, QLineEdit, QListView,
+    QAbstractItemView, QMenu
 )
-from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtCore import Qt, QUrl, QModelIndex
 from PyQt6.QtGui import QDesktopServices
 from ui.dialogs.info_dialog import InfoDialog
 from core_functions.downloader import DownloadManager
@@ -20,6 +20,9 @@ from ui.common.user_message import UserMessageService
 from .models import DownloadMode
 from .new_download_dialog import NewDownloadDialog
 from .progress_tracker import SessionProgressBar
+from .delegate import DownloadDelegate
+from .download_model import DownloadListModel
+from .proxy_model import DownloadProxyModel
 
 logger = LoggerManager.get_logger(__name__)
 
@@ -40,7 +43,16 @@ class DownloadManagerDialog(QDialog):
         self.ayah_manager = ayah_manager
         self.surah_reciters = surah_reciters
         self.ayah_reciters = ayah_reciters
-        self.item_map: Dict[str, QListWidgetItem] = {}
+        
+        # Initialize Models
+        self.surah_model = DownloadListModel(self.surah_manager, self)
+        self.ayah_model = DownloadListModel(self.ayah_manager, self)
+        
+        self.proxy_model = DownloadProxyModel(self)
+        
+        # Default to Surah Model
+        self.proxy_model.setSourceModel(self.surah_model)
+
         self.user_message_service = UserMessageService(self)
 
         self.setWindowTitle("مدير التنزيلات")
@@ -49,7 +61,7 @@ class DownloadManagerDialog(QDialog):
         self._setup_ui()
         self.session_progress.set_managers([self.surah_manager, self.ayah_manager])
         self._connect_signals()
-        self.update_list()
+        # No initial update_list needed, model handles it
         
     def _setup_ui(self):
         layout = QVBoxLayout()
@@ -62,12 +74,12 @@ class DownloadManagerDialog(QDialog):
         self.section_label = QLabel("القسم:")
         self.section_combo = QComboBox()
         self.section_combo.setAccessibleName(self.section_label.text())
-        for manager, reciters_manager, label in [
-            (self.surah_manager, self.surah_reciters, "السور"), 
-            (self.ayah_manager, self.ayah_reciters, "الآيات")
-            ]:
-            if manager:
-                self.section_combo.addItem(label, (manager, reciters_manager))
+        
+        # Add items with (Model, Manager, RecitersManager) as UserData
+        if self.surah_manager:
+            self.section_combo.addItem("السور", (self.surah_model, self.surah_manager, self.surah_reciters))
+        if self.ayah_manager:
+            self.section_combo.addItem("الآيات", (self.ayah_model, self.ayah_manager, self.ayah_reciters))
 
         self.filter_label = QLabel("تصفية:")
         self.filter_combo = QComboBox()
@@ -83,10 +95,16 @@ class DownloadManagerDialog(QDialog):
         top_layout.addWidget(self.filter_combo)
         layout.addLayout(top_layout)
 
-        # === List Widget ===
-        self.list_widget = QListWidget()
-        self.list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        layout.addWidget(self.list_widget)
+        # === ListView Widget ===
+        self.list_view = QListView()
+        self.list_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.list_view.setModel(self.proxy_model)
+        self.list_view.setItemDelegate(DownloadDelegate(self.list_view))
+        self.list_view.setUniformItemSizes(True)
+        self.list_view.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.list_view.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        
+        layout.addWidget(self.list_view)
 
         # === Session Progress ===
         self.session_progress = SessionProgressBar(self)
@@ -106,159 +124,89 @@ class DownloadManagerDialog(QDialog):
         self.setLayout(layout)
 
     def _connect_signals(self):
-        self.section_combo.currentIndexChanged.connect(self.update_list)
-        self.filter_combo.currentIndexChanged.connect(self.update_list)
-        self.search_box.textChanged.connect(self.update_list)
-        self.list_widget.customContextMenuRequested.connect(self.show_context_menu)
+        self.section_combo.currentIndexChanged.connect(self.on_section_changed)
+        self.filter_combo.currentIndexChanged.connect(self.on_filter_changed)
+        self.search_box.textChanged.connect(self.on_search_text_changed)
+        self.list_view.customContextMenuRequested.connect(self.show_context_menu)
 
         self.btn_download.clicked.connect(self.show_download_menu)
         self.btn_delete.clicked.connect(self.show_delete_menu)
         self.btn_close.clicked.connect(self.close)
-        self.surah_manager.download_progress.connect(self.update_progress)
-        self.ayah_manager.download_progress.connect(self.update_progress)
-        self.surah_manager.status_changed.connect(self.update_status)
-        self.ayah_manager.status_changed.connect(self.update_status)
-        self.surah_manager.download_finished.connect(self.on_finished)
-        self.ayah_manager.download_finished.connect(self.on_finished)
+        
+        # Manager signals are handled by the models internally for data updates.
+        # However, for SessionProgressBar, it might still need direct manager signals or we can hook them up.
+        # The session progress bar likely connects to managers internally if passed in `set_managers`?
+        # create `set_managers` in `main_dialog.__init__` handles it.
+        # But we also have `on_finished` in original code that was updating tooltips. Model handles this now.
+        
+        # We still need to listen to add events effectively if session progress needs recalc, 
+        # but `SessionProgressBar` implementation likely handles signals from managers directly.
+        
+        # Let's ensure session progress updates when new downloads are added via the dialog.
+        self.surah_manager.downloads_added.connect(lambda _: self.session_progress.recalculate_totals())
+        self.ayah_manager.downloads_added.connect(lambda _: self.session_progress.recalculate_totals())
+
+    def on_section_changed(self):
+        data = self.section_combo.currentData()
+        if data:
+            model = data[0]
+            self.proxy_model.setSourceModel(model)
+
+    def on_filter_changed(self):
+        status = self.filter_combo.currentData()
+        self.proxy_model.set_status_filter(status)
+
+    def on_search_text_changed(self, text):
+        self.proxy_model.set_text_filter(text)
 
     @property
     def current_manager(self) -> DownloadManager:
-        return self.section_combo.currentData()[0]
+        return self.section_combo.currentData()[1]
     
     @property
     def current_reciters_manager(self) -> RecitersManager:
-        return self.section_combo.currentData()[1]
-
-    @property
-    def current_filter_status(self) -> Optional[DownloadStatus]:
-        return self.filter_combo.currentData()
-
-    @property
-    def current_download_item(self) -> Optional[QListWidgetItem]:
-        return self.list_widget.currentItem()
+        return self.section_combo.currentData()[2]
 
     @property
     def current_download_id(self) -> Optional[int]:
-        item = self.current_download_item
-        if not item:
+        index = self.list_view.currentIndex()
+        if not index.isValid():
             return None
-        return item.data(Qt.ItemDataRole.UserRole)
+        return index.data(DownloadListModel.ItemRole)["id"]
     
     @property
     def current_download_title(self) -> str:
-        return " ".join(self.current_download_item.text().split(", ")[:-1])
-
-    def update_progress(self, progress: DownloadProgress):
-        """Fast update for a specific item's progress."""
-        item = self.item_map.get(progress.download_id)
-        if not item:
-            return
-        
-        if self.current_download_id != progress.download_id:
-            return
-
-        progress_text = (
-            f"{progress.percentage}%, "
-            f"تم تنزيل {progress.downloaded_str} من {progress.total_str}\n"
-            f"السرعة: {progress.speed_str} | الوقت المنقضي: {progress.elapsed_time_str} | الوقت المتبقي: {progress.remaining_time_str}"
-            )
-
-        item.setData(Qt.ItemDataRole.AccessibleDescriptionRole, progress_text)
-        item.setToolTip(progress_text)
-
-    def update_status(self, download_id: str, status: DownloadStatus):
-        """Update the status of a specific item."""
-        item = self.item_map.get(download_id)
-        if not item:
-            #logger.warning(f"Item with ID {download_id} not found in item_map.")
-            return
-
-        if self.current_download_id != download_id:
-            return
-
-        text = item.text()
-        if ", " in text:
-            base_text = ", ".join(text.split(", ")[:-1])
-            new_text = f"{base_text}, {status.label}"
-            item.setText(new_text)
-
-    def on_finished(self, download_id: str):
-        """Handle when a download is finished."""
-        item = self.item_map.get(download_id)
-        if not item:
-#            logger.warning(f"Item with ID {download_id} not found in item_map.")
-            return
-        
-        if self.current_download_id != download_id:
-            return
-
-        download_item = self.current_manager.get_download(download_id)
-        text = f"100%, الحجم {download_item['size_text'] or 'غير معروف'}"
-        item.setData(Qt.ItemDataRole.AccessibleDescriptionRole, text)
-        item.setToolTip(text)
-
-    def update_list(self):
-        """Rebuild the visible list based on filters and search."""
-        manager = self.current_manager
-        if not manager:
-            logger.warning("No download manager selected.")
-            return
-
-        self.list_widget.clear()
-        self.item_map.clear()
-
-        status = self.current_filter_status
-        search_text = self.search_box.text().strip().lower()
-        download_items = manager.get_downloads(status)
-        surahs = self.parent.quran_manager.get_surahs()
-
-        # Optimization: Disable paint events during list update
-        self.list_widget.setUpdatesEnabled(False)
-        try:
-            for item_data in download_items:
-                if search_text and search_text not in item_data["filename"].lower():
-                    continue
-
-                progress = (
-                    f"{(item_data['downloaded_bytes'] / item_data['total_bytes'] * 100):.1f}%, " if item_data["total_bytes"] > 0 else "0%, "
-                ) + f", الحجم {item_data.get('size_text') or 'غير معروف'}"
-
-                surah = surahs[item_data["surah_number"] - 1]
-                reciter_display_text = self.current_reciters_manager.get_reciter(item_data["reciter_id"]).get("display_text", "قارئ غير معروف")
-                display_text = f"{item_data['filename']}, {surah.name}, {reciter_display_text}, {item_data['status'].label}"
-
-                item = QListWidgetItem(display_text)
-                item.setData(Qt.ItemDataRole.UserRole, item_data['id'])
-                item.setData(Qt.ItemDataRole.AccessibleDescriptionRole, progress)
-                item.setToolTip(progress)
-                self.list_widget.addItem(item)
-                self.item_map[item_data['id']] = item
-        finally:
-            self.list_widget.setUpdatesEnabled(True)
+        index = self.list_view.currentIndex()
+        if not index.isValid():
+            return ""
+        return index.data(Qt.ItemDataRole.DisplayRole)
 
     def show_context_menu(self, pos):
         """Show context menu for the selected download item."""
-        if not self.current_download_item:
-            logger.warning("No download item selected for context menu.")
+        index = self.list_view.indexAt(pos)
+        if not index.isValid():
             return
 
-        menu = QMenu(self)
-        download_item = self.current_manager.get_download(self.current_download_id)
-        current_status = download_item["status"]
-        download_item = self.current_manager.get_download(self.current_download_id)
-        file_path = Path(download_item["folder_path"]) / download_item["filename"]
+        item_data = index.data(DownloadListModel.ItemRole)
+        if not item_data:
+            return
 
+        download_id = item_data["id"]
+        current_status = item_data["status"]
+        file_path = Path(item_data["folder_path"]) / item_data["filename"]
+
+        menu = QMenu(self)
 
         # Pause / Resume depending on state
         if current_status == DownloadStatus.DOWNLOADING:
-            menu.addAction("إيقاف مؤقت", lambda: self.current_manager.pause(self.current_download_id))
+            menu.addAction("إيقاف مؤقت", lambda: self.current_manager.pause(download_id))
         elif current_status == DownloadStatus.PAUSED:
-            menu.addAction("استئناف", lambda: self.current_manager.resume(self.current_download_id))
+            menu.addAction("استئناف", lambda: self.current_manager.resume(download_id))
         elif current_status == DownloadStatus.CANCELLED:
-            menu.addAction("بدء التنزيل", lambda: self.current_manager.restart(self.current_download_id))
+            menu.addAction("بدء التنزيل", lambda: self.current_manager.restart(download_id))
             menu.addAction("بدء تنزيل الكل", self.current_manager.restart_all)
         elif current_status == DownloadStatus.ERROR:
-            menu.addAction("إعادة المحاولة", lambda: self.current_manager.restart(self.current_download_id))
+            menu.addAction("إعادة المحاولة", lambda: self.current_manager.restart(download_id))
 
         # Options for completed downloads
         if current_status == DownloadStatus.COMPLETED:
@@ -284,29 +232,20 @@ class DownloadManagerDialog(QDialog):
 
         menu.setAccessibleName("الإجراءات")
         menu.setFocus()
-        menu.exec(self.list_widget.mapToGlobal(pos))
+        menu.exec(self.list_view.mapToGlobal(pos))
 
     def show_selected_item_info(self):
-        """
-        Get the selected download ID,
-        fetch full row from DB using get_download,
-        and format & display the information.
-        """
         download_id = self.current_download_id
         if download_id is None:
             logger.warning("No download selected.")
             return
 
-        # get full row as dict
         data = self.current_manager.get_download(download_id)
-
         if not data:
             logger.warning(f"No data found for download ID {download_id}")
             return
         formatted_text, window_title = self.format_download_info(data)
         InfoDialog(self, window_title, window_title, formatted_text).open()
-
-
 
     def format_download_info(self, data: dict) -> tuple[str, str]:
         """Format a download item (Surah or Ayah) into a clean text for display entirely inside f-strings."""
@@ -347,18 +286,31 @@ class DownloadManagerDialog(QDialog):
 
     def delete_selected_item(self):
         """Delete the currently selected download item."""
-        if not self.current_download_item:
+        download_id = self.current_download_id
+        if not download_id:
             return
         
         if  self.user_message_service.confirm(
             "تأكيد الحذف", f"هل أنت متأكد من حذف العنصر التالي؟\n\n{self.current_download_title}"
             ):
-            self.current_manager.delete(self.current_download_id)
-            self.item_map.pop(self.current_download_id)
-            self.update_list()
+            self.current_manager.delete(download_id)
+            # Model sync isn't automatic for delete unless we signal it or reload. 
+            # Current model implementation might not catch specific delete unless manager signals updates.
+            # Manager emits no delete signal currently in this codebase.
+            # We should probably trigger a reload of mapping in model.
+            
+            # Since manager.py does NOT emit a 'deleted' signal, we must manually tell model to refresh
+            # or add a method to model to remove item.
+            # Simplest for now: Re-initialize model IDs from manager.
+            if self.list_view.model() == self.proxy_model:
+                source_model = self.proxy_model.sourceModel()
+                if isinstance(source_model, DownloadListModel):
+                    # We need a way to refresh. Let's add 'refresh' or just re-init.
+                    # Or hack: source_model._initialize_from_manager() and layoutChanged.
+                     source_model._initialize_from_manager()
+                     source_model.layoutChanged.emit()
 
     def delete_by_status(self, status, status_label):
-
         if not self.user_message_service.confirm(
             "تأكيد الحذف",
             f"هل تريد حذف العناصر {status_label}؟",
@@ -378,7 +330,10 @@ class DownloadManagerDialog(QDialog):
         else:
             self.current_manager.delete_by_status(status)
 
-        self.update_list()
+        # Refresh model
+        if isinstance(self.proxy_model.sourceModel(), DownloadListModel):
+             self.proxy_model.sourceModel()._initialize_from_manager()
+             self.proxy_model.sourceModel().layoutChanged.emit()
 
     def cancel_current_item(self):
         if self.user_message_service.confirm(
@@ -400,7 +355,10 @@ class DownloadManagerDialog(QDialog):
             "هل أنت متأكد من حذف جميع العناصر؟",
         ):
             self.current_manager.delete_all()
-            self.update_list()
+            # Refresh model
+            if isinstance(self.proxy_model.sourceModel(), DownloadListModel):
+                 self.proxy_model.sourceModel()._initialize_from_manager()
+                 self.proxy_model.sourceModel().layoutChanged.emit()
 
     def show_delete_menu(self):
         menu = QMenu(self)
@@ -410,7 +368,6 @@ class DownloadManagerDialog(QDialog):
 
         menu.addAction("حذف غير المكتمل",
         lambda: self.delete_by_status("incomplete", "غير المكتمل"))
-
         
         menu.setAccessibleName("قائمة حذف")
         menu.setFocus()
@@ -439,9 +396,7 @@ class DownloadManagerDialog(QDialog):
             path = F"{Config.downloading.download_path}/{reciter['id']}"
             self.surah_manager.add_new_downloads(new_downloads, path)
             self.surah_manager.start()
-            self.update_list()
-            self.session_progress.recalculate_totals()
-            self.list_widget.setFocus()
+            self.list_view.setFocus()
 
     def download_ayahs(self):
         surahs = self.parent.quran_manager.get_surahs()
@@ -482,9 +437,7 @@ class DownloadManagerDialog(QDialog):
                 path = F"{Config.downloading.download_path}/{reciter['id']}"
                 self.ayah_manager.add_new_downloads(new_downloads, path)
                 self.ayah_manager.start()
-                self.update_list()
-                self.session_progress.recalculate_totals()
-                self.list_widget.setFocus()
+                self.list_view.setFocus()
 
     def show_download_menu(self):
         menu = QMenu(self)
