@@ -61,7 +61,7 @@ class DownloadManager(QObject):
                 "status": item.status,
                 "downloaded_bytes": item.downloaded_bytes,
                 "total_bytes": item.total_bytes,
-                "file_hash": item.file_hash,
+                #"file_hash": item.file_hash,
             }
             self.set_size_text(item.id, item.total_bytes)
 
@@ -236,7 +236,7 @@ class DownloadManager(QObject):
     def cancel_all(self):
         logger.info("Cancelling all downloads")
         self.pool.clear()
-        for download_item in self.get_downloads([DownloadStatus.DOWNLOADING, DownloadStatus.PENDING]):
+        for download_item in self.get_downloads(DownloadStatus.DOWNLOADING):
             self.cancel(download_item["id"])
 
     def restart_all(self):
