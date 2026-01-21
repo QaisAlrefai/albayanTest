@@ -153,6 +153,10 @@ class DownloadManagerDialog(QDialog):
         item = self.item_map.get(progress.download_id)
         if not item:
             return
+        
+        if self.current_download_id != progress.download_id:
+            return
+
         progress_text = (
             f"{progress.percentage}%, "
             f"تم تنزيل {progress.downloaded_str} من {progress.total_str}\n"
@@ -166,9 +170,12 @@ class DownloadManagerDialog(QDialog):
         """Update the status of a specific item."""
         item = self.item_map.get(download_id)
         if not item:
-            logger.warning(f"Item with ID {download_id} not found in item_map.")
+            #logger.warning(f"Item with ID {download_id} not found in item_map.")
             return
-        
+
+        if self.current_download_id != download_id:
+            return
+
         text = item.text()
         if ", " in text:
             base_text = ", ".join(text.split(", ")[:-1])
@@ -179,9 +186,12 @@ class DownloadManagerDialog(QDialog):
         """Handle when a download is finished."""
         item = self.item_map.get(download_id)
         if not item:
-            logger.warning(f"Item with ID {download_id} not found in item_map.")
+#            logger.warning(f"Item with ID {download_id} not found in item_map.")
             return
         
+        if self.current_download_id != download_id:
+            return
+
         download_item = self.current_manager.get_download(download_id)
         text = f"100%, الحجم {download_item['size_text'] or 'غير معروف'}"
         item.setData(Qt.ItemDataRole.AccessibleDescriptionRole, text)
