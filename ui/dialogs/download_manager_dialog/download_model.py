@@ -33,12 +33,14 @@ class DownloadListModel(QAbstractListModel):
         self.manager.status_changed.connect(self.on_status_changed)
         self.manager.download_finished.connect(self.on_download_finished)
         self.manager.error.connect(self.on_download_error)
+        self.manager.cancelled_all.connect(self.on_cancelled_all)
+        self.manager.download_deleted.connect(self.on_download_deleted)
+        self.manager.downloads_cleared.connect(self.on_downloads_cleared)
 
-        # Connect to a signal for deletions if you implement one in manager.
-        # Currently manager doesn't seem to have a dedicated bulk delete signal other than careful manual management,
-        # but for now we assume additions are the main bottleneck. 
-        # Ideally manager should emit `downloads_removed` or similar. I'll stick to what's available or safe.
-    
+        # Cache for transient progress data (speed, eta, etc.) which isn't in main storage
+        self._progress_cache: Dict[int, DownloadProgress] = {}
+
+        
     def _initialize_from_manager(self):
         # Initial load
         all_downloads = self.manager.get_downloads()
@@ -64,8 +66,28 @@ class DownloadListModel(QAbstractListModel):
         if role == Qt.ItemDataRole.DisplayRole:
             return item_data["filename"]
             
+        elif role == Qt.ItemDataRole.ToolTipRole:
+            # UI: Multiline tooltip with current speed/ETA
+            progress = self._progress_cache.get(download_id)
+            if progress:
+                return progress.tooltip_text
+            # Fallback if no progress update received yet
+            return f"{item_data['filename']}\n{item_data['status'].label}"
+
+        elif role == Qt.ItemDataRole.AccessibleDescriptionRole:
+            # Accessibility: Description should include details
+            # We combine status label + dynamic progress info
+            status_label = item_data["status"].label if item_data.get("status") else "Unknown"
+            base_text = f"{status_label}"
+            
+            progress = self._progress_cache.get(download_id)
+            if progress:
+                return f"{base_text}. {progress.accessible_text}"
+            return base_text
+
         elif role == Qt.ItemDataRole.AccessibleTextRole:
-            # Accessibility: Descriptive text for screen readers
+            # Accessibility: Main item text (Title + brief status)
+            # Keeping it simple as requested, or matching previous behavior
             status_text = item_data["status"].label if item_data.get("status") else "Unknown"
             progress_val = 0
             if item_data["total_bytes"] > 0:
@@ -102,14 +124,24 @@ class DownloadListModel(QAbstractListModel):
         self.endInsertRows()
 
     def on_download_progress(self, progress: DownloadProgress):
+        # Update cache
+        self._progress_cache[progress.download_id] = progress
+        
         # Find row for this download_id
         try:
             row = self._download_ids.index(progress.download_id)
             index = self.index(row, 0)
-            # Emit dataChanged for Roles that might affect appearance
-            # Note: For strict performance, only emit roles that actually changed.
-            # But Progress is usually visually represented by a custom delegate using UserRoles.
-            self.dataChanged.emit(index, index, [self.ProgressRole, Qt.ItemDataRole.AccessibleTextRole])
+            
+            # Emit dataChanged for Roles that might affect appearance and accessibility
+            # AccessibleDescriptionRole needs to be updated for screen readers to catch the change
+            roles = [
+                self.ProgressRole, 
+                Qt.ItemDataRole.ToolTipRole,
+                Qt.ItemDataRole.AccessibleDescriptionRole
+                # AccessibleTextRole usually doesn't need constant updates if it's just name + status
+                # but if it includes %, it might. Kept strictly necessary ones to avoid spamming.
+            ]
+            self.dataChanged.emit(index, index, roles)
         except ValueError:
             pass # ID not in our list (maybe deleted or filtered?)
 
@@ -136,3 +168,24 @@ class DownloadListModel(QAbstractListModel):
             self.dataChanged.emit(index, index, [self.StatusRole, Qt.ItemDataRole.AccessibleTextRole])
         except ValueError:
             pass
+
+    def on_cancelled_all(self):
+        self._download_ids.clear()
+        self._progress_cache.clear()
+        
+    def on_download_deleted(self, download_id: int):
+        try:
+            row = self._download_ids.index(download_id)
+            self.beginRemoveRows(QModelIndex(), row, row)
+            self._download_ids.pop(row)
+            if download_id in self._progress_cache:
+                del self._progress_cache[download_id]
+            self.endRemoveRows()
+        except ValueError:
+            pass
+
+    def on_downloads_cleared(self):
+        self.beginResetModel()
+        self._download_ids.clear()
+        self._progress_cache.clear()
+        self.endResetModel()

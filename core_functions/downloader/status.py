@@ -167,3 +167,40 @@ class DownloadProgress:
             bool: True if download has completed.
         """
         return self.total_bytes > 0 and self.downloaded_bytes >= self.total_bytes
+
+    @property
+    def tooltip_text(self) -> str:
+        """
+        Returns a multiline string for UI tooltips.
+        """
+        lines = [
+            f"Progress: {self.percentage}%",
+            f"Size: {self.downloaded_str} / {self.total_str}",
+        ]
+        
+        # Only show speed and ETA if active and not complete
+        if not self.is_complete and self.percentage < 100:
+            speed = self.speed_str
+            eta = self.remaining_time_str
+            # Simple check to avoid showing meaningless 0 speed/eta if just started
+            if self.downloaded_bytes > 0:
+                lines.append(f"Speed: {speed}")
+                lines.append(f"ETA: {eta}")
+        
+        return "\n".join(lines)
+
+    @property
+    def accessible_text(self) -> str:
+        """
+        Returns a linear, screen-reader friendly string.
+        """
+        parts = [
+            f"{self.percentage} percent complete",
+            f"{self.downloaded_str} of {self.total_str}",
+        ]
+        
+        if not self.is_complete and self.percentage < 100 and self.downloaded_bytes > 0:
+            parts.append(f"at {self.speed_str}")
+            parts.append(f"{self.remaining_time_str} remaining")
+            
+        return ". ".join(parts) + "."

@@ -1,8 +1,9 @@
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from .models import Base, DownloadTableBase
+from .status import DownloadStatus
 from utils.logger import LoggerManager
 
 logger = LoggerManager.get_logger(__name__)
@@ -85,7 +86,7 @@ class DownloadDB:
                 logger.error(f"Error fetching download item with id {download_id}: {e}")
                 return None
 
-    def update_status(self, download_id: str, new_status: int):
+    def update_status(self, download_id: str, new_status: DownloadStatus):
         logger.debug(f"Updating status for download_id {download_id} to {new_status}")
         with self.Session() as session:
             try:
@@ -99,6 +100,25 @@ class DownloadDB:
             except SQLAlchemyError as e:
                 logger.error(f"Error updating status for download_id {download_id}: {e}")
                 session.rollback()
+
+    def update_by_status(self, old_status: DownloadStatus | list[DownloadStatus], new_status: DownloadStatus):
+
+        if not isinstance(old_status, list):
+            old_status = [old_status]
+        
+        stmt = (
+        update(self.download_table)
+        .where(self.download_table.status.in_(old_status))
+        .values(status=new_status)
+        )
+
+        try:
+            with self.Session() as session:
+                    result = session.execute(stmt)
+                    session.commit()
+                    logger.info(f"Updated {result.rowcount} items from status {old_status} to {new_status}")
+        except SQLAlchemyError as e:
+            logger.error(f"Error updating items from status {old_status} to {new_status}: {e}")
 
     def find_one(self, **filters):
         """Find a single item matching the filters."""

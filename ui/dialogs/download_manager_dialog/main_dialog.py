@@ -143,8 +143,16 @@ class DownloadManagerDialog(QDialog):
         # but `SessionProgressBar` implementation likely handles signals from managers directly.
         
         # Let's ensure session progress updates when new downloads are added via the dialog.
+
+        # Let's ensure session progress updates when new downloads are added via the dialog.
         self.surah_manager.downloads_added.connect(lambda _: self.session_progress.recalculate_totals())
         self.ayah_manager.downloads_added.connect(lambda _: self.session_progress.recalculate_totals())
+        
+        # Ensure session progress updates when downloads are deleted
+        self.surah_manager.download_deleted.connect(lambda _: self.session_progress.recalculate_totals())
+        self.ayah_manager.download_deleted.connect(lambda _: self.session_progress.recalculate_totals())
+        self.surah_manager.downloads_cleared.connect(self.session_progress.recalculate_totals)
+        self.ayah_manager.downloads_cleared.connect(self.session_progress.recalculate_totals)
 
     def on_section_changed(self):
         data = self.section_combo.currentData()
@@ -290,25 +298,11 @@ class DownloadManagerDialog(QDialog):
         if not download_id:
             return
         
-        if  self.user_message_service.confirm(
-            "تأكيد الحذف", f"هل أنت متأكد من حذف العنصر التالي؟\n\n{self.current_download_title}"
+            if  self.user_message_service.confirm(
+                "تأكيد الحذف", f"هل أنت متأكد من حذف العنصر التالي؟\n\n{self.current_download_title}"
             ):
-            self.current_manager.delete(download_id)
-            # Model sync isn't automatic for delete unless we signal it or reload. 
-            # Current model implementation might not catch specific delete unless manager signals updates.
-            # Manager emits no delete signal currently in this codebase.
-            # We should probably trigger a reload of mapping in model.
-            
-            # Since manager.py does NOT emit a 'deleted' signal, we must manually tell model to refresh
-            # or add a method to model to remove item.
-            # Simplest for now: Re-initialize model IDs from manager.
-            if self.list_view.model() == self.proxy_model:
-                source_model = self.proxy_model.sourceModel()
-                if isinstance(source_model, DownloadListModel):
-                    # We need a way to refresh. Let's add 'refresh' or just re-init.
-                    # Or hack: source_model._initialize_from_manager() and layoutChanged.
-                     source_model._initialize_from_manager()
-                     source_model.layoutChanged.emit()
+                self.current_manager.delete(download_id)
+                # Model automatically updates via signals now.
 
     def delete_by_status(self, status, status_label):
         if not self.user_message_service.confirm(
@@ -330,10 +324,7 @@ class DownloadManagerDialog(QDialog):
         else:
             self.current_manager.delete_by_status(status)
 
-        # Refresh model
-        if isinstance(self.proxy_model.sourceModel(), DownloadListModel):
-             self.proxy_model.sourceModel()._initialize_from_manager()
-             self.proxy_model.sourceModel().layoutChanged.emit()
+        # Model automatically updates via signals now.
 
     def cancel_current_item(self):
         if self.user_message_service.confirm(
@@ -355,10 +346,7 @@ class DownloadManagerDialog(QDialog):
             "هل أنت متأكد من حذف جميع العناصر؟",
         ):
             self.current_manager.delete_all()
-            # Refresh model
-            if isinstance(self.proxy_model.sourceModel(), DownloadListModel):
-                 self.proxy_model.sourceModel()._initialize_from_manager()
-                 self.proxy_model.sourceModel().layoutChanged.emit()
+            # Model automatically updates via signals now.
 
     def show_delete_menu(self):
         menu = QMenu(self)

@@ -18,7 +18,10 @@ class DownloadManager(QObject):
     download_finished = pyqtSignal(int, str)                      # id, file_path
     error = pyqtSignal(int, str)                         # id, error message
     status_changed = pyqtSignal(int, DownloadStatus)     # id, new status
+    cancelled_all = pyqtSignal()
     downloads_added = pyqtSignal(list)                   # list of new download items
+    download_deleted = pyqtSignal(int)
+    downloads_cleared = pyqtSignal()
 
     def __init__(
         self,
@@ -242,9 +245,18 @@ class DownloadManager(QObject):
     def cancel_all(self):
         logger.info("Cancelling all downloads")
         self.pool.clear()
+
         for download_item in self.get_downloads(DownloadStatus.DOWNLOADING):
             self.cancel(download_item["id"])
 
+        if self.save_history and self.db:
+            self.db.update_by_status(
+                old_status=[DownloadStatus.DOWNLOADING, DownloadStatus.PENDING],
+                new_status=DownloadStatus.CANCELLED
+            )
+
+        self.cancelled_all.emit()
+        
     def restart_all(self):
         logger.info("Restarting all downloads")
         for download in self.get_downloads(DownloadStatus.CANCELLED):
@@ -263,6 +275,7 @@ class DownloadManager(QObject):
                 logger.info("Deleted file: %s", file_path)
             del self._downloads[download_id]
             logger.info("Deleted download ID: %d", download_id)
+            self.download_deleted.emit(download_id)
         else:
             logger.warning("Attempted to delete non-existent download ID: %d", download_id)
 
@@ -274,7 +287,8 @@ class DownloadManager(QObject):
 
     def delete_all(self, delete_files: bool = True):
         logger.debug("Deleting all downloads")
-        self.db.delete_all()
+        if self.db:
+            self.db.delete_all()
         if delete_files:
             for info in self._downloads.values():
                 file_path = Path(info["folder_path"]) / info["filename"]
@@ -282,6 +296,7 @@ class DownloadManager(QObject):
                 logger.info("Deleted file: %s", file_path)
         self._downloads.clear()
         logger.info("All downloads deleted")
+        self.downloads_cleared.emit()
 
     def get_download(self, download_id: int) -> Optional[Dict]:
         """Return the download item by ID, or None if not found."""

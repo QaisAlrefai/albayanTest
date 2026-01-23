@@ -8,7 +8,7 @@ class DownloadProxyModel(QSortFilterProxyModel):
         super().__init__(parent)
         self.filter_status = None
         self.filter_string = ""
-        self.setDynamicSortFilter(True)
+        self.setDynamicSortFilter(False)
 
     def set_status_filter(self, status: DownloadStatus):
         self.filter_status = status
