@@ -2,8 +2,9 @@
 from PyQt6.QtCore import Qt, QAbstractListModel, QModelIndex, QObject
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
 from core_functions.downloader.manager import DownloadManager
-from core_functions.Reciters import ReciterManager
+from core_functions.Reciters import RecitersManager
 from typing import List, Dict, Any, Optional
+from utils.audio_player import status
 from utils.logger import LoggerManager
 
 logger = LoggerManager.get_logger(__name__)
@@ -22,7 +23,7 @@ class DownloadListModel(QAbstractListModel):
             self,
             parent: QObject,
             manager: DownloadManager,
-            reciter_manager: ReciterManager,
+            reciter_manager: RecitersManager
             ):
         super().__init__(parent)
         self.manager = manager
@@ -61,37 +62,26 @@ class DownloadListModel(QAbstractListModel):
             
         download_id = self._download_ids[row]
         item_data = self.manager.get_download(download_id)
+        reciter_data = self.reciter_manager.get_reciter(item_data["reciter_id"])
         
         if not item_data:
             return None
 
+        file_name = item_data.get("filename", "ملف غير معروف")
+        status = item_data.get("status", DownloadStatus.ERROR)
+        size_text = item_data.get("size_text", "الحجم غير معروف")
+        reciter_display_text = reciter_data.get("display_text", "قارئ غير معروف")
+        progress: DownloadProgress = self._progress_cache.get(download_id)
+
         if role == Qt.ItemDataRole.DisplayRole:
-            return item_data["filename"]
+            return f"{file_name}, {reciter_display_text}, {status.label}"
             
         elif role == Qt.ItemDataRole.ToolTipRole:
-            progress = self._progress_cache.get(download_id)
-            if progress:
-                return progress.tooltip_text
+            return self._build_progress_text(progress, status, item_data)
 
-        elif role == Qt.ItemDataRole.AccessibleDescriptionRole:
-            status_label = item_data["status"].label if item_data.get("status") else "Unknown"
-            base_text = f"{status_label}"
-            
-            progress = self._progress_cache.get(download_id)
-            if progress:
-                return f"{base_text}. {progress.accessible_text}"
-            return base_text
-
-        elif role == Qt.ItemDataRole.AccessibleTextRole:
-            # Accessibility: Main item text (Title + brief status)
-            # Keeping it simple as requested, or matching previous behavior
-            status_text = item_data["status"].label if item_data.get("status") else "Unknown"
-            progress_val = 0
-            if item_data["total_bytes"] > 0:
-                progress_val = int((item_data["downloaded_bytes"] / item_data["total_bytes"]) * 100)
-            
-            return f"{item_data['filename']}, {status_text}, {progress_val}%"
-            
+        if role == Qt.ItemDataRole.AccessibleDescriptionRole:
+            return self._build_progress_text(progress, status, item_data)
+        
         elif role == self.ItemRole:
             return item_data
             
@@ -99,12 +89,7 @@ class DownloadListModel(QAbstractListModel):
             return item_data["status"]
             
         elif role == self.ProgressRole:
-            # Return a simple dict or object with progress info
-            return {
-                "downloaded": item_data["downloaded_bytes"],
-                "total": item_data["total_bytes"],
-                "percentage": int((item_data["downloaded_bytes"] / item_data["total_bytes"]) * 100) if item_data["total_bytes"] > 0 else 0
-            }
+            return progress
 
         return None
 
@@ -124,29 +109,23 @@ class DownloadListModel(QAbstractListModel):
         # Update cache
         self._progress_cache[progress.download_id] = progress
         
-        # Find row for this download_id
         try:
             row = self._download_ids.index(progress.download_id)
             index = self.index(row, 0)
-            
-            # Emit dataChanged for Roles that might affect appearance and accessibility
-            # AccessibleDescriptionRole needs to be updated for screen readers to catch the change
             roles = [
                 self.ProgressRole, 
                 Qt.ItemDataRole.ToolTipRole,
                 Qt.ItemDataRole.AccessibleDescriptionRole
-                # AccessibleTextRole usually doesn't need constant updates if it's just name + status
-                # but if it includes %, it might. Kept strictly necessary ones to avoid spamming.
             ]
             self.dataChanged.emit(index, index, roles)
         except ValueError:
-            pass # ID not in our list (maybe deleted or filtered?)
+            pass
 
     def on_status_changed(self, download_id: int, new_status: DownloadStatus):
         try:
             row = self._download_ids.index(download_id)
             index = self.index(row, 0)
-            self.dataChanged.emit(index, index, [self.StatusRole, Qt.ItemDataRole.AccessibleTextRole])
+            self.dataChanged.emit(index, index, [self.StatusRole])
         except ValueError:
             pass
 
@@ -154,7 +133,7 @@ class DownloadListModel(QAbstractListModel):
         try:
             row = self._download_ids.index(download_id)
             index = self.index(row, 0)
-            self.dataChanged.emit(index, index, [self.StatusRole, self.ProgressRole, Qt.ItemDataRole.AccessibleTextRole])
+            self.dataChanged.emit(index, index, [self.StatusRole, self.ProgressRole, Qt.ItemDataRole.AccessibleDescriptionRole])
         except ValueError:
             pass
 
@@ -162,13 +141,16 @@ class DownloadListModel(QAbstractListModel):
         try:
             row = self._download_ids.index(download_id)
             index = self.index(row, 0)
-            self.dataChanged.emit(index, index, [self.StatusRole, Qt.ItemDataRole.AccessibleTextRole])
+            self.dataChanged.emit(index, index, [self.StatusRole, qt.ItemDataRole.ToolTipRole, Qt.ItemDataRole.AccessibleDescriptionRole])
         except ValueError:
             pass
 
     def on_cancelled_all(self):
+        self.beginResetModel()
         self._download_ids.clear()
         self._progress_cache.clear()
+        self.endResetModel()
+        
         
     def on_download_deleted(self, download_id: int):
         try:
@@ -186,3 +168,25 @@ class DownloadListModel(QAbstractListModel):
         self._download_ids.clear()
         self._progress_cache.clear()
         self.endResetModel()
+
+    def _build_progress_text(self, progress: DownloadProgress, status: DownloadStatus, item_data: dict) -> str:
+
+        
+        if progress and  (progress.is_complete or status in (DownloadStatus.CANCELLED, DownloadStatus.COMPLETED, DownloadStatus.ERROR, DownloadStatus.PAUSED)):
+            return f"{progress.percentage}%"
+
+        if not progress:
+            # fallback if no progress data to use item data
+            if status in (DownloadStatus.PAUSED, DownloadStatus.ERROR):
+                percentage = item_data.get("downloaded_bytes", 0) / item_data.get("total_bytes", 1) * 100 if item_data.get("total_bytes", 1) > 0 else 0
+                return f"{percentage:.2f}%"
+            else:
+                return ""
+            
+            
+        return (
+            f"{progress.percentage}%, "
+            f"تم تنزيل {progress.downloaded_str} من {progress.total_str}, "
+            f"السرعة: {progress.speed_str}, "
+            f"الوقت المتبقي: {progress.elapsed_time_str}"
+        )

@@ -2,7 +2,7 @@
 from PyQt6.QtWidgets import QStyledItemDelegate, QStyleOptionViewItem, QStyle
 from PyQt6.QtCore import Qt, QSize, QRect, QEvent
 from PyQt6.QtGui import QPainter, QColor
-from core_functions.downloader.status import DownloadStatus
+from core_functions.downloader.status import DownloadStatus, DownloadProgress
 from .download_model import DownloadListModel
 
 class DownloadDelegate(QStyledItemDelegate):
@@ -27,7 +27,7 @@ class DownloadDelegate(QStyledItemDelegate):
         
         # Data retrieval
         item_data = index.data(DownloadListModel.ItemRole)
-        progress_data = index.data(DownloadListModel.ProgressRole)
+        progress_data: DownloadProgress = index.data(DownloadListModel.ProgressRole)
         
         # Fallback if data isn't ready
         if not item_data:
@@ -42,9 +42,9 @@ class DownloadDelegate(QStyledItemDelegate):
         total_str = "0 B"
         
         if progress_data:
-            percentage = progress_data.get("percentage", 0)
-            downloaded = progress_data.get("downloaded", 0)
-            total = progress_data.get("total", 0)
+            percentage = progress_data.percentage
+            downloaded = progress_data.downloaded_bytes
+            total = progress_data.total_bytes
             
             # Simple formatter (can use util function if available)
             def fmt(b):
