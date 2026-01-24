@@ -2,6 +2,7 @@
 from PyQt6.QtCore import Qt, QAbstractListModel, QModelIndex, QObject
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
 from core_functions.downloader.manager import DownloadManager
+from core_functions.Reciters import ReciterManager
 from typing import List, Dict, Any, Optional
 from utils.logger import LoggerManager
 
@@ -17,14 +18,16 @@ class DownloadListModel(QAbstractListModel):
     ProgressRole = Qt.ItemDataRole.UserRole + 1
     StatusRole = Qt.ItemDataRole.UserRole + 2
 
-    def __init__(self, manager: DownloadManager, parent: Optional[QObject] = None):
+    def __init__(
+            self,
+            parent: QObject,
+            manager: DownloadManager,
+            reciter_manager: ReciterManager,
+            ):
         super().__init__(parent)
         self.manager = manager
-        # We keep a local list of download IDs to map row index -> download ID
-        # This list must be kept in sync with the manager's internal state
+        self.reciter_manager = reciter_manager
         self._download_ids: List[int] = [] 
-        
-        # We can initialize from existing downloads in the manager
         self._initialize_from_manager()
 
         # Connect signals
@@ -42,7 +45,6 @@ class DownloadListModel(QAbstractListModel):
 
         
     def _initialize_from_manager(self):
-        # Initial load
         all_downloads = self.manager.get_downloads()
         self._download_ids = [d["id"] for d in all_downloads]
 
@@ -67,16 +69,11 @@ class DownloadListModel(QAbstractListModel):
             return item_data["filename"]
             
         elif role == Qt.ItemDataRole.ToolTipRole:
-            # UI: Multiline tooltip with current speed/ETA
             progress = self._progress_cache.get(download_id)
             if progress:
                 return progress.tooltip_text
-            # Fallback if no progress update received yet
-            return f"{item_data['filename']}\n{item_data['status'].label}"
 
         elif role == Qt.ItemDataRole.AccessibleDescriptionRole:
-            # Accessibility: Description should include details
-            # We combine status label + dynamic progress info
             status_label = item_data["status"].label if item_data.get("status") else "Unknown"
             base_text = f"{status_label}"
             

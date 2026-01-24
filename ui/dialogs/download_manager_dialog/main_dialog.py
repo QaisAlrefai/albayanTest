@@ -45,8 +45,8 @@ class DownloadManagerDialog(QDialog):
         self.ayah_reciters = ayah_reciters
         
         # Initialize Models
-        self.surah_model = DownloadListModel(self.surah_manager, self)
-        self.ayah_model = DownloadListModel(self.ayah_manager, self)
+        self.surah_model = DownloadListModel(self, self.surah_manager, self.surah_reciters)
+        self.ayah_model = DownloadListModel(self, self.ayah_manager, self.ayah_reciters)
         
         self.proxy_model = DownloadProxyModel(self)
         
