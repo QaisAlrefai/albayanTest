@@ -1,8 +1,11 @@
 
 from PyQt6.QtCore import Qt, QAbstractListModel, QModelIndex, QObject
+
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
 from core_functions.downloader.manager import DownloadManager
 from core_functions.Reciters import RecitersManager
+from core_functions.quran.types import Surah
+
 from typing import List, Dict, Any, Optional
 from utils.audio_player import status
 from utils.logger import LoggerManager
@@ -23,11 +26,13 @@ class DownloadListModel(QAbstractListModel):
             self,
             parent: QObject,
             manager: DownloadManager,
-            reciter_manager: RecitersManager
+            reciter_manager: RecitersManager,
+            surahs: List[Surah]
             ):
         super().__init__(parent)
         self.manager = manager
         self.reciter_manager = reciter_manager
+        self.surahs = surahs
         self._download_ids: List[int] = [] 
         self._initialize_from_manager()
 
@@ -71,10 +76,13 @@ class DownloadListModel(QAbstractListModel):
         status = item_data.get("status", DownloadStatus.ERROR)
         size_text = item_data.get("size_text", "الحجم غير معروف")
         reciter_display_text = reciter_data.get("display_text", "قارئ غير معروف")
+        surah = self.surahs[item_data["surah_number"] - 1]
+        ayah_number = item_data.get("ayah_number") - surah.first_ayah_number + 1 if item_data.get("ayah_number") else None
         progress: DownloadProgress = self._progress_cache.get(download_id)
 
         if role == Qt.ItemDataRole.DisplayRole:
-            return f"{file_name}, {reciter_display_text}, {status.label}"
+            surah_info = f"آية {ayah_number} من سورة {surah.name}" if ayah_number else f"سورة {surah.name}"
+            return f"{file_name}, {surah_info}, {reciter_display_text}, {status.label}"
             
         elif role == Qt.ItemDataRole.ToolTipRole:
             return self._build_progress_text(progress, status, item_data)
