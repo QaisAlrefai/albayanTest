@@ -77,7 +77,7 @@ class DownloadListModel(QAbstractListModel):
         size_text = item_data.get("size_text", "الحجم غير معروف")
         reciter_display_text = reciter_data.get("display_text", "قارئ غير معروف")
         surah = self.surahs[item_data["surah_number"] - 1]
-        ayah_number = item_data.get("ayah_number") - surah.first_ayah_number + 1 if item_data.get("ayah_number") else None
+        ayah_number = item_data.get("ayah_number")
         progress: DownloadProgress = self._progress_cache.get(download_id)
 
         if role == Qt.ItemDataRole.DisplayRole:
