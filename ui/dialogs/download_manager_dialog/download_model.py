@@ -149,13 +149,12 @@ class DownloadListModel(QAbstractListModel):
         try:
             row = self._download_ids.index(download_id)
             index = self.index(row, 0)
-            self.dataChanged.emit(index, index, [self.StatusRole, qt.ItemDataRole.ToolTipRole, Qt.ItemDataRole.AccessibleDescriptionRole])
+            self.dataChanged.emit(index, index, [self.StatusRole, Qt.ItemDataRole.ToolTipRole, Qt.ItemDataRole.AccessibleDescriptionRole])
         except ValueError:
             pass
 
     def on_cancelled_all(self):
         self.beginResetModel()
-        self._download_ids.clear()
         self._progress_cache.clear()
         self.endResetModel()
         
@@ -173,8 +172,8 @@ class DownloadListModel(QAbstractListModel):
 
     def on_downloads_cleared(self):
         self.beginResetModel()
-        self._download_ids.clear()
         self._progress_cache.clear()
+        self._download_ids.clear()
         self.endResetModel()
 
     def _build_progress_text(self, progress: DownloadProgress, status: DownloadStatus, item_data: dict) -> str:
