@@ -105,7 +105,7 @@ class DownloadDB:
 
         if not isinstance(old_status, list):
             old_status = [old_status]
-        
+                
         stmt = (
         update(self.download_table)
         .where(self.download_table.status.in_(old_status))

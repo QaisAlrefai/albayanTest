@@ -255,6 +255,10 @@ class DownloadManager(QObject):
                 new_status=DownloadStatus.CANCELLED
             )
 
+        # Update in-memory statuses as well
+        for download_item in self.get_downloads([DownloadStatus.DOWNLOADING, DownloadStatus.PENDING]):
+            self._downloads[download_item["id"]]["status"] = DownloadStatus.CANCELLED
+
         self.cancelled_all.emit()
         
     def restart_all(self):
