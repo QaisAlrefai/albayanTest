@@ -266,11 +266,11 @@ class DownloadManager(QObject):
 
         if self.save_history and self.db:
             self.db.update_by_status(
-                old_status=DownloadStatus.CANCELLED,
+                old_status=[DownloadStatus.CANCELLED, DownloadStatus.ERROR],
                 new_status=DownloadStatus.PENDING
             )
 
-        for download in self.get_downloads(DownloadStatus.CANCELLED):
+        for download in self.get_downloads([DownloadStatus.CANCELLED, DownloadStatus.ERROR]):
             self._downloads[download["id"]]["status"] = DownloadStatus.PENDING
             self._start_download(download["id"])
 

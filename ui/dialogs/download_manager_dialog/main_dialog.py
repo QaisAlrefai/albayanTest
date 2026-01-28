@@ -204,39 +204,35 @@ class DownloadManagerDialog(QDialog):
         file_path = Path(item_data["folder_path"]) / item_data["filename"]
 
         menu = QMenu(self)
-
-        # Pause / Resume depending on state
-        if current_status == DownloadStatus.DOWNLOADING:
-            menu.addAction("إيقاف مؤقت", lambda: self.current_manager.pause(download_id))
-        elif current_status == DownloadStatus.PAUSED:
-            menu.addAction("استئناف", lambda: self.current_manager.resume(download_id))
-        elif current_status == DownloadStatus.CANCELLED:
-            menu.addAction("بدء التنزيل", self.restart_current_item)
-            menu.addAction("بدء تنزيل الكل", self.restart_all)
-        elif current_status == DownloadStatus.ERROR:
-            menu.addAction("إعادة المحاولة", self.restart_current_item)
-
-        # Options for completed downloads
-        if current_status == DownloadStatus.COMPLETED:
-            if file_path.exists():
-                menu.addAction(
-                    "تشغيل في المشغل الافتراضي",
-                    lambda: self.open_in_default_player(file_path)
-                )
-                menu.addAction(
-                    "فتح في المجلد",
-                    lambda: self.open_containing_folder(file_path)
-                )
-
-        # Cancel option if active
-        if current_status not in [DownloadStatus.COMPLETED, DownloadStatus.CANCELLED, DownloadStatus.ERROR]:
-            menu.addAction("إلغاء التنزيل", self.cancel_current_item)
-            menu.addAction("إلغاء تنزيل الكل", self.cancel_all)
-
-        # Delete option
+        open_file_action = menu.addAction("تشغيل في المشغل الافتراضي", lambda: self.open_in_default_player(file_path))
+        open_folder = menu.addAction("فتح في المجلد", lambda: self.open_containing_folder(file_path))
         menu.addSeparator()
-        menu.addAction("حذف العنصر المحدد", self.delete_selected_item)
-        menu.addAction("معلومات العنصر المحدد", self.show_selected_item_info)
+        pause_action = menu.addAction("إيقاف مؤقت", self.pause_current_item)
+        pause_all_action = menu.addAction("إيقاف تنزيل الكل", self.pause_all)
+        resume_action = menu.addAction("استئناف", lambda: self.current_manager.resume(download_id))
+        resume_all = menu.addAction("استئناف تنزيل الكل", self.current_manager.resume_all)
+        start_action = menu.addAction("إعادة المحاولة" if current_status == DownloadStatus.ERROR else "بدء التنزيل", self.restart_current_item)
+        start_all = menu.addAction("بدء تنزيل الكل", self.restart_all)
+        cancel_action = menu.addAction("إلغاء التنزيل", self.cancel_current_item)
+        cancel_all_action = menu.addAction("إلغاء تنزيل الكل", self.cancel_all)
+        menu.addSeparator()
+        delete_action = menu.addAction("حذف العنصر المحدد", self.delete_selected_item)
+        delete_all_action = menu.addAction("حذف الكل", self.delete_all)
+        info_action = menu.addAction("معلومات العنصر المحدد", self.show_selected_item_info)
+
+        # status of actions based on current status
+        open_file_action.setEnabled(file_path.exists() and current_status == DownloadStatus.COMPLETED)
+        open_folder.setEnabled(file_path.exists())
+        pause_action.setEnabled(current_status == DownloadStatus.DOWNLOADING)
+        pause_all_action.setEnabled(self.current_manager.has_active_downloads())
+        resume_action.setEnabled(current_status == DownloadStatus.PAUSED)
+        resume_all.setEnabled(len(self.current_manager.get_downloads([DownloadStatus.PAUSED])) > 0)
+        start_action.setEnabled(current_status in {DownloadStatus.ERROR, DownloadStatus.CANCELLED})
+        start_all.setEnabled(len(self.current_manager.get_downloads([DownloadStatus.CANCELLED, DownloadStatus.ERROR])) > 0)
+        cancel_action.setEnabled(current_status in {DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED})
+        cancel_all_action.setEnabled(len(self.current_manager.get_downloads([DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED])) > 0)
+        delete_action.setEnabled(self.current_download_id is not None)
+        delete_all_action.setEnabled(len(self.current_manager.get_downloads()) > 0)
 
         menu.setAccessibleName("الإجراءات")
         menu.setFocus()
@@ -329,6 +325,14 @@ class DownloadManagerDialog(QDialog):
             f"هل أنت متأكد من إلغاء تنزيل العنصر التالي؟\n\n{self.current_download_title}"
         ):
             self.current_manager.cancel(self.current_download_id)
+
+    def pause_current_item(self):
+        self.current_manager.pause(self.current_download_id)
+        self.proxy_model.invalidateFilter()
+
+    def pause_all(self):
+        self.current_manager.pause_all()
+        self.proxy_model.invalidateFilter()
 
     def restart_current_item(self):
         self.current_manager.restart(self.current_download_id)
