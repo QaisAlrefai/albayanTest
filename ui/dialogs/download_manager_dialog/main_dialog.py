@@ -211,10 +211,10 @@ class DownloadManagerDialog(QDialog):
         elif current_status == DownloadStatus.PAUSED:
             menu.addAction("استئناف", lambda: self.current_manager.resume(download_id))
         elif current_status == DownloadStatus.CANCELLED:
-            menu.addAction("بدء التنزيل", lambda: self.current_manager.restart(download_id))
-            menu.addAction("بدء تنزيل الكل", self.current_manager.restart_all)
+            menu.addAction("بدء التنزيل", self.restart_current_item)
+            menu.addAction("بدء تنزيل الكل", self.restart_all)
         elif current_status == DownloadStatus.ERROR:
-            menu.addAction("إعادة المحاولة", lambda: self.current_manager.restart(download_id))
+            menu.addAction("إعادة المحاولة", self.restart_current_item)
 
         # Options for completed downloads
         if current_status == DownloadStatus.COMPLETED:
@@ -284,7 +284,7 @@ class DownloadManagerDialog(QDialog):
     def open_in_default_player(self, file_path: Union[str, Path]):
         file_path = Path(file_path) if isinstance(file_path, str) else file_path
         if file_path.exists():
-            QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(file_path)))
 
     def open_containing_folder(self, file_path: Union[str, Path]):
         file_path = Path(file_path) if isinstance(file_path, str) else file_path
@@ -302,7 +302,6 @@ class DownloadManagerDialog(QDialog):
                 "تأكيد الحذف", f"هل أنت متأكد من حذف العنصر التالي؟\n\n{self.current_download_title}"
             ):
                 self.current_manager.delete(download_id)
-                # Model automatically updates via signals now.
 
     def delete_by_status(self, status, status_label):
         if not self.user_message_service.confirm(
@@ -324,8 +323,6 @@ class DownloadManagerDialog(QDialog):
         else:
             self.current_manager.delete_by_status(status)
 
-        # Model automatically updates via signals now.
-
     def cancel_current_item(self):
         if self.user_message_service.confirm(
             "تأكيد إلغاء التنزيل",
@@ -333,12 +330,21 @@ class DownloadManagerDialog(QDialog):
         ):
             self.current_manager.cancel(self.current_download_id)
 
+    def restart_current_item(self):
+        self.current_manager.restart(self.current_download_id)
+        self.proxy_model.invalidateFilter()
+
+    def restart_all(self):
+        self.current_manager.restart_all()
+        self.proxy_model.invalidateFilter()
+
     def cancel_all(self):
         if self.user_message_service.confirm(
             "تأكيد إلغاء الكل",
             "هل أنت متأكد من إلغاء جميع التنزيلات؟",
         ):
             self.current_manager.cancel_all()
+            self.proxy_model.invalidateFilter()
 
     def delete_all(self):
         if self.user_message_service.confirm(
@@ -346,7 +352,6 @@ class DownloadManagerDialog(QDialog):
             "هل أنت متأكد من حذف جميع العناصر؟",
         ):
             self.current_manager.delete_all()
-            # Model automatically updates via signals now.
 
     def show_delete_menu(self):
         menu = QMenu(self)

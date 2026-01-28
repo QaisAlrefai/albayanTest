@@ -233,14 +233,14 @@ class DownloadManager(QObject):
     def pause_all(self):
         logger.info("Pausing all downloads")
         self._pause_all = True
-        for download_id in self._downloads:
-            self.pause(download_id)
+        for download_item in self.get_downloads(DownloadStatus.DOWNLOADING):
+            self.pause(download_item["id"])
 
     def resume_all(self):
         logger.info("Resuming all downloads")
         self._pause_all = False
-        for download_id in self._downloads:
-            self.resume(download_id)
+        for download_item in self.get_downloads(DownloadStatus.PAUSED):
+            self.resume(download_item["id"])
 
     def cancel_all(self):
         logger.info("Cancelling all downloads")
@@ -263,8 +263,16 @@ class DownloadManager(QObject):
         
     def restart_all(self):
         logger.info("Restarting all downloads")
+
+        if self.save_history and self.db:
+            self.db.update_by_status(
+                old_status=DownloadStatus.CANCELLED,
+                new_status=DownloadStatus.PENDING
+            )
+
         for download in self.get_downloads(DownloadStatus.CANCELLED):
-            self.restart(download_id=download["id"])
+            self._downloads[download["id"]]["status"] = DownloadStatus.PENDING
+            self._start_download(download["id"])
 
     def delete(self, download_id: int, delete_file: bool = True):
         logger.debug("Deleting download ID: %d", download_id)
