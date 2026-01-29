@@ -420,7 +420,7 @@ class DownloadManagerDialog(QDialog):
                 if                 to_ayah_global >= surah.first_ayah_number and                 to_ayah_global <= surah.last_ayah_number:
                     end_ayah = to_ayah_global - surah.first_ayah_number + 1
 
-                for ayah_num in range(start_ayah, end_ayah + 1):
+                for ayah_num in range(start_ayah if start_ayah > 1 else 0, end_ayah + 1):
                     url = self.ayah_reciters.get_url(reciter["id"], surah.number, ayah_num)
                     if url:
                         new_downloads.append({
