@@ -393,6 +393,7 @@ class DownloadManagerDialog(QDialog):
             path = F"{Config.downloading.download_path}/{reciter['id']}"
             self.surah_manager.add_new_downloads(new_downloads, path)
             self.surah_manager.start()
+            self.section_combo.setCurrentIndex(0)
             self.list_view.setFocus()
 
     def download_ayahs(self):
@@ -434,6 +435,7 @@ class DownloadManagerDialog(QDialog):
                 path = F"{Config.downloading.download_path}/{reciter['id']}"
                 self.ayah_manager.add_new_downloads(new_downloads, path)
                 self.ayah_manager.start()
+                self.section_combo.setCurrentIndex(1)
                 self.list_view.setFocus()
 
     def show_download_menu(self):
