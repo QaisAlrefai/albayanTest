@@ -153,12 +153,13 @@ class DownloadWorker(QRunnable):
 
     def resume(self) -> None:
         logger.debug(f"[Resumed] ID={self.download_id}")
-        self._pause_mutex.lock()
-        self._paused = False
-        self._resume_requested = True
-        self._pause_condition.wakeAll()
-        self._pause_mutex.unlock()
-        self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
+        if self.is_running():
+            self._pause_mutex.lock()
+            self._paused = False
+            self._resume_requested = True
+            self._pause_condition.wakeAll()
+            self._pause_mutex.unlock()
+            self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
 
     def cancel(self) -> None:
         logger.debug(f"[Cancel Requested] ID={self.download_id}")
