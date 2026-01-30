@@ -38,6 +38,7 @@ class DownloadManager(QObject):
         self._downloads: Dict[int, Dict] = {}
         self._pause_all = False
         self._cancel_all = False
+        self.is_shutdown = False
         self.db = download_db
 
         if not self.db and (save_history or load_history):
@@ -188,11 +189,19 @@ class DownloadManager(QObject):
         logger.debug("Resuming download ID: %d", download_id)
         if worker := self._downloads.get(download_id, {}).get("worker"):
             worker.resume()
+        else:
+            # No existing worker, so start a new one
+            self._start_download(download_id)
 
     def cancel(self, download_id: int):
         logger.debug("Cancelling download ID: %d", download_id)
         if worker := self._downloads.get(download_id, {}).get("worker"):
             worker.cancel()            
+
+    def shutdown(self, download_id: int):
+        logger.debug("Shutting down download ID: %d", download_id)
+        if worker := self._downloads.get(download_id, {}).get("worker"):
+            worker.shutdown()
 
     def _start_download(self, download_id: int):
         """Internal method to start a download worker for a given download ID."""
@@ -233,31 +242,55 @@ class DownloadManager(QObject):
     def pause_all(self):
         logger.info("Pausing all downloads")
         self._pause_all = True
+        
+        if self.save_history and self.db:
+            self.db.update_by_status(
+                old_status=[DownloadStatus.DOWNLOADING, DownloadStatus.PENDING],
+                new_status=DownloadStatus.PAUSED
+            )
+
         for download_item in self.get_downloads(DownloadStatus.DOWNLOADING):
             self.pause(download_item["id"])
 
+        for download_item in self.get_downloads([DownloadStatus.DOWNLOADING, DownloadStatus.PENDING]):
+            download_item["status"] = DownloadStatus.PAUSED
+        
     def resume_all(self):
         logger.info("Resuming all downloads")
         self._pause_all = False
         for download_item in self.get_downloads(DownloadStatus.PAUSED):
             self.resume(download_item["id"])
+            download_item["status"] = DownloadStatus.PENDING
 
-    def cancel_all(self):
+        if self.save_history and self.db:
+            self.db.update_by_status(
+                old_status=DownloadStatus.PAUSED,
+                new_status=DownloadStatus.PENDING
+            )
+
+    def cancel_all(self, update_memory_status: bool = True, is_shutdown: bool = False):
         logger.info("Cancelling all downloads")
         self.pool.clear()
+        self.is_shutdown = is_shutdown
 
         for download_item in self.get_downloads(DownloadStatus.DOWNLOADING):
             self.cancel(download_item["id"])
-
+        
         if self.save_history and self.db:
             self.db.update_by_status(
                 old_status=[DownloadStatus.DOWNLOADING, DownloadStatus.PENDING],
                 new_status=DownloadStatus.CANCELLED
             )
 
+        # If shutting down, ensure PAUSED downloads are also properly handled
+        if is_shutdown:
+            for download_item in self.get_downloads(DownloadStatus.PAUSED):
+                self.shutdown(download_item["id"])
+
         # Update in-memory statuses as well
-        for download_item in self.get_downloads([DownloadStatus.DOWNLOADING, DownloadStatus.PENDING]):
-            self._downloads[download_item["id"]]["status"] = DownloadStatus.CANCELLED
+        if not update_memory_status:
+            for download_item in self.get_downloads([DownloadStatus.DOWNLOADING, DownloadStatus.PENDING]):
+                self._downloads[download_item["id"]]["status"] = DownloadStatus.CANCELLED
 
         self.cancelled_all.emit()
         

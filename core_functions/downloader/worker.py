@@ -2,7 +2,10 @@
 import os
 import requests
 from typing import Callable, Dict
-from PyQt6.QtCore import QRunnable, pyqtSlot, QThread
+from PyQt6.QtCore import (
+QRunnable, pyqtSlot, QThread,
+QMutex, QWaitCondition
+)
 from .status import DownloadStatus, DownloadProgress
 from .db import DownloadDB
 from utils.func import calculate_sha256
@@ -28,7 +31,12 @@ class DownloadWorker(QRunnable):
 
         self._running = False
         self._paused = False
+        self._resume_requested = False
         self._cancelled = False
+
+        # Synchronization primitives
+        self._pause_mutex = QMutex()
+        self._pause_condition = QWaitCondition()
 
         logger.debug(f"[Worker Init] ID={self.download_id}, URL={self.url}")
 
@@ -72,14 +80,25 @@ class DownloadWorker(QRunnable):
 
             with open(self.temp_path, file_mode) as f:
                 for chunk in r.iter_content(chunk_size=256     * 1024):
+
                     if self._cancelled or self.manager._cancel_all:
                         logger.info(f"[Cancelled] ID={self.download_id}")
                         self.callbacks["status"](self.download_id, DownloadStatus.CANCELLED)
                         return
 
-                    while self._paused or self.manager._pause_all:
-                        QThread.msleep(100)
-                        progress.reset_start_time()  # Reset timer when resumed
+                    self._pause_mutex.lock()
+                    try:
+                        while self._paused or self.manager._pause_all:
+                            if self.manager.is_shutdown or self._cancelled or self.manager._cancel_all:
+                                return
+                            self._pause_condition.wait(self._pause_mutex)
+
+                        if self._resume_requested:
+                            progress.reset_start_time()  # Reset timer when resumed
+                            self._resume_requested = False
+
+                    finally:                        
+                        self._pause_mutex.unlock()
 
                     if chunk:
                         f.write(chunk)
@@ -120,19 +139,36 @@ class DownloadWorker(QRunnable):
 
     def pause(self) -> None:
         logger.debug(f"[Paused] ID={self.download_id}")
+        self._pause_mutex.lock()
         self._paused = True
+        self._pause_mutex.unlock()
         self.callbacks["status"](self.download_id, DownloadStatus.PAUSED)
 
     def resume(self) -> None:
         logger.debug(f"[Resumed] ID={self.download_id}")
+        self._pause_mutex.lock()
         self._paused = False
+        self._resume_requested = True
+        self._pause_condition.wakeAll()
+        self._pause_mutex.unlock()
         self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
 
     def cancel(self) -> None:
         logger.debug(f"[Cancel Requested] ID={self.download_id}")
+        self._pause_mutex.lock()
         self._cancelled = True
+        self._pause_condition.wakeAll()
+        self._pause_mutex.unlock()
         self.delete_temp_file()
         self.callbacks["status"](self.download_id, DownloadStatus.CANCELLED)
+
+    def shutdown(self) -> None:
+        logger.debug(f"[Shutdown Requested] ID={self.download_id}")
+        if self.is_running():
+            self._pause_mutex.lock()
+            self._cancelled = True
+            self._pause_condition.wakeAll()
+            self._pause_mutex.unlock()
 
     def delete_temp_file(self) -> None:
         if os.path.exists(self.temp_path):

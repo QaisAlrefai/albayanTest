@@ -527,8 +527,8 @@ class MenuBar(QMenuBar):
     def stop_all_downloads(self):
         """Cancel all active downloads."""
         logger.info("Stopping all downloads before exit.")
-        self.surah_manager.cancel_all()
-        self.ayah_manager.cancel_all()
+        self.surah_manager.cancel_all(update_memory_status=False, is_shutdown=True)
+        self.ayah_manager.cancel_all(update_memory_status=False, is_shutdown=True)
 
     def Onopen_log_file(self):
         log_file_path = os.path.join(paths.app_folder, "albayan.log")
