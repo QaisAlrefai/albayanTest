@@ -76,7 +76,8 @@ class DownloadWorker(QRunnable):
             )
             last_percentage = progress.percentage
 
-            self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
+            if self.can_report_download:
+                self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
 
             with open(self.temp_path, file_mode) as f:
                 for chunk in r.iter_content(chunk_size=256     * 1024):
@@ -91,10 +92,14 @@ class DownloadWorker(QRunnable):
                         while self._paused or self.manager._pause_all:
                             if self.manager.is_shutdown or self._cancelled or self.manager._cancel_all:
                                 return
+                            
+                            self.callbacks["status"](self.download_id, DownloadStatus.PAUSED)
                             self._pause_condition.wait(self._pause_mutex)
 
                         if self._resume_requested:
                             progress.reset_start_time()  # Reset timer when resumed
+                            if self.can_report_download():
+                                self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
                             self._resume_requested = False
 
                     finally:                        
@@ -108,7 +113,6 @@ class DownloadWorker(QRunnable):
 
                         if progress.percentage - last_percentage >= 1 or downloaded_bytes == total_bytes:
                             self.callbacks["progress"](progress)
-                            self.callbacks["status"](self.download_id, DownloadStatus.DOWNLOADING)
                             
                             if self.db:
                                 self.db.upsert({
@@ -137,6 +141,9 @@ class DownloadWorker(QRunnable):
     def is_running(self) -> bool:
         return self._running
 
+    def can_report_download(self) -> bool:
+        return not self._paused and not self._cancelled and not self.manager._pause_all and not self.manager._cancel_all and not self.manager.is_shutdown
+    
     def pause(self) -> None:
         logger.debug(f"[Paused] ID={self.download_id}")
         self._pause_mutex.lock()
