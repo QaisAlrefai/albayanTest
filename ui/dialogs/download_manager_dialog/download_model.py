@@ -24,9 +24,9 @@ class DownloadListModel(QAbstractListModel):
     percentageRole = Qt.ItemDataRole.UserRole + 3
     speedRole = Qt.ItemDataRole.UserRole + 4
     downloadedSizeRole = Qt.ItemDataRole.UserRole + 5
-    elapsedTimeRole = Qt.ItemDataRole.UserRole + 6
+    remainingTimeRole = Qt.ItemDataRole.UserRole + 6
+    elapsedTimeRole = Qt.ItemDataRole.UserRole + 7
     
-
     def __init__(
             self,
             parent: QObject,
@@ -112,6 +112,9 @@ class DownloadListModel(QAbstractListModel):
         elif role == self.downloadedSizeRole:
             return self.get_item_downloaded_size(download_id)
 
+        elif role == self.remainingTimeRole:
+            return self.get_item_remaining_time(download_id)
+        
         elif role == self.elapsedTimeRole:
             return self.get_item_elapsed_time(download_id)
             
@@ -211,7 +214,8 @@ class DownloadListModel(QAbstractListModel):
             f"{progress.percentage}%, "
             f"تم تنزيل {progress.downloaded_str} من {progress.total_str}, "
             f"السرعة: {progress.speed_str}, "
-            f"الوقت المتبقي: {progress.elapsed_time_str}"
+            f"الوقت المتبقي: {progress.remaining_time_str}"
+            f", الوقت المنقضي: {progress.elapsed_time_str}"
         )
     
     def get_download_progress(self, download_id: int) -> Optional[DownloadProgress]:
@@ -230,6 +234,13 @@ class DownloadListModel(QAbstractListModel):
         """Get current download status for a given download ID."""
         download_data = self.manager.get_download(download_id)
         return download_data.get("status", DownloadStatus.ERROR)
+
+    def get_item_remaining_time(self, download_id: int) -> str:
+        """Get current download remaining time for a given download ID."""
+        progress = self.get_download_progress(download_id)
+        if progress:
+            return progress.remaining_time_str
+        return "غير معروف"
 
     def get_item_elapsed_time(self, download_id: int) -> str:
         """Get current download elapsed time for a given download ID."""
