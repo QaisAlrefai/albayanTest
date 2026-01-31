@@ -11,7 +11,6 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QUrl, QModelIndex
 from PyQt6.QtGui import QDesktopServices
-from django import shortcuts
 from ui.dialogs.info_dialog import InfoDialog
 from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
