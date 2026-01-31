@@ -290,7 +290,7 @@ class DownloadManager(QObject):
                 self.shutdown(download_item["id"])
 
         # Update in-memory statuses as well
-        if not update_memory_status:
+        if  update_memory_status:
             for download_item in self.get_downloads([DownloadStatus.DOWNLOADING, DownloadStatus.PENDING]):
                 self._downloads[download_item["id"]]["status"] = DownloadStatus.CANCELLED
 
