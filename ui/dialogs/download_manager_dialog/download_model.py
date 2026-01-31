@@ -157,6 +157,7 @@ class DownloadListModel(QAbstractListModel):
             pass
 
     def on_download_finished(self, download_id: int, file_path: str):
+        self._progress_cache.pop(download_id)
         try:
             row = self._download_ids.index(download_id)
             index = self.index(row, 0)
