@@ -166,6 +166,7 @@ class DownloadManagerDialog(QDialog):
             (QKeySequence("C"), self.say_status),
             (QKeySequence("S"), self.say_speed),
             (QKeySequence("D"), self.say_downloaded_size),
+            (QKeySequence("R"), self.say_remaining_time),
             (QKeySequence("E"), self.say_elapsed_time),
         )
 
@@ -499,6 +500,13 @@ class DownloadManagerDialog(QDialog):
         if index:
             size = index.data(DownloadListModel.downloadedSizeRole)
             UniversalSpeech.say(size)
+
+    def say_remaining_time(self):
+        """Use text-to-speech to announce the remaining time."""
+        index = self.current_item_index
+        if index:
+            remaining = index.data(DownloadListModel.remainingTimeRole)
+            UniversalSpeech.say(remaining)
 
     def say_elapsed_time(self):
         """Use text-to-speech to announce the elapsed time."""
