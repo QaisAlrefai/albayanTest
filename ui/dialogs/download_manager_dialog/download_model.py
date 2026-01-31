@@ -1,5 +1,6 @@
 
 from PyQt6.QtCore import Qt, QAbstractListModel, QModelIndex, QObject
+from PyQt6.QtGui import QKeySequence, QShortcut
 
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
 from core_functions.downloader.manager import DownloadManager
@@ -21,6 +22,11 @@ class DownloadListModel(QAbstractListModel):
     ItemRole = Qt.ItemDataRole.UserRole
     ProgressRole = Qt.ItemDataRole.UserRole + 1
     StatusRole = Qt.ItemDataRole.UserRole + 2
+    percentageRole = Qt.ItemDataRole.UserRole + 3
+    speedRole = Qt.ItemDataRole.UserRole + 4
+    downloadedSizeRole = Qt.ItemDataRole.UserRole + 5
+    elapsedTimeRole = Qt.ItemDataRole.UserRole + 6
+    
 
     def __init__(
             self,
@@ -49,7 +55,6 @@ class DownloadListModel(QAbstractListModel):
         # Cache for transient progress data (speed, eta, etc.) which isn't in main storage
         self._progress_cache: Dict[int, DownloadProgress] = {}
 
-        
     def _initialize_from_manager(self):
         all_downloads = self.manager.get_downloads()
         self._download_ids = [d["id"] for d in all_downloads]
@@ -99,6 +104,18 @@ class DownloadListModel(QAbstractListModel):
         elif role == self.ProgressRole:
             return progress
 
+        elif role == self.percentageRole:
+            self.get_item_percentage(download_id)
+
+        elif role == self.speedRole:
+            self.get_item_speed(download_id)
+
+        elif role == self.downloadedSizeRole:
+            self.get_item_downloaded_size(download_id)
+
+        elif role == self.elapsedTimeRole:
+            self.get_item_elapsed_time(download_id)
+            
         return None
 
     def on_downloads_added(self, new_items: List[Dict]):
@@ -197,3 +214,41 @@ class DownloadListModel(QAbstractListModel):
             f"السرعة: {progress.speed_str}, "
             f"الوقت المتبقي: {progress.elapsed_time_str}"
         )
+    
+    def get_download_progress(self, download_id: int) -> Optional[DownloadProgress]:
+        return self._progress_cache.get(download_id)
+
+    def get_item_percentage(self, download_id: int) -> float:
+        """Get current download percentage for a given download ID."""
+        progress = self.get_download_progress(download_id)
+        if not progress:
+            download_data = self.manager.get_download(download_id)
+            percentage = download_data.get("downloaded_bytes", 0) / download_data.get("total_bytes", 1) * 100 if download_data.get("total_bytes", 1) > 0 else 0
+
+        return percentage
+
+    def get_item_status(self, download_id: int) -> DownloadStatus:
+        """Get current download status for a given download ID."""
+        download_data = self.manager.get_download(download_id)
+        return download_data.get("status", DownloadStatus.ERROR)
+
+    def get_item_elapsed_time(self, download_id: int) -> str:
+        """Get current download elapsed time for a given download ID."""
+        progress = self.get_download_progress(download_id)
+        if progress:
+            return progress.elapsed_time_str
+        return "غير معروف"
+
+    def get_item_speed(self, download_id: int) -> str:
+        """Get current download speed for a given download ID."""
+        progress = self.get_download_progress(download_id)
+        if progress:
+            return progress.speed_str
+        return "غير معروف"
+    
+    def get_item_downloaded_size(self, download_id: int) -> str:
+        """Get current download downloaded size for a given download ID."""
+        progress = self.get_download_progress(download_id)
+        if progress:
+            return f"تم تنزيل {progress.downloaded_str} من {progress.total_str}"
+        return "غير معروف"
