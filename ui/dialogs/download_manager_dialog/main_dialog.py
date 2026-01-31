@@ -2,6 +2,8 @@ from pathlib import Path
 import os
 import subprocess
 from typing import List, Dict, Optional, Union
+
+from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QMessageBox,
     QPushButton, QLabel, QLineEdit, QListView,
@@ -9,12 +11,14 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QUrl, QModelIndex
 from PyQt6.QtGui import QDesktopServices
+from django import shortcuts
 from ui.dialogs.info_dialog import InfoDialog
 from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
 from core_functions.Reciters import RecitersManager
 from utils.logger import LoggerManager
 from utils.settings import Config
+from  utils.universal_speech import UniversalSpeech
 
 from ui.common.user_message import UserMessageService
 from .models import DownloadMode
@@ -59,10 +63,11 @@ class DownloadManagerDialog(QDialog):
         self.setMinimumWidth(520)
 
         self._setup_ui()
+        self.set_shortcuts()
         self.session_progress.set_managers([self.surah_manager, self.ayah_manager])
         self._connect_signals()
         # No initial update_list needed, model handles it
-        
+
     def _setup_ui(self):
         layout = QVBoxLayout()
 
@@ -154,6 +159,20 @@ class DownloadManagerDialog(QDialog):
         self.surah_manager.downloads_cleared.connect(self.session_progress.recalculate_totals)
         self.ayah_manager.downloads_cleared.connect(self.session_progress.recalculate_totals)
 
+    def set_shortcuts(self):
+
+        shortcuts = (
+            (QKeySequence("P"), self.say_percentage),
+            (QKeySequence("C"), self.say_status),
+            (QKeySequence("S"), self.say_speed),
+            (QKeySequence("D"), self.say_downloaded_size),
+            (QKeySequence("E"), self.say_elapsed_time),
+        )
+
+        for seq, func in shortcuts:
+            shortcut = QShortcut(seq, self)
+            shortcut.activated.connect(func)
+
     def on_section_changed(self):
         data = self.section_combo.currentData()
         if data:
@@ -176,15 +195,22 @@ class DownloadManagerDialog(QDialog):
         return self.section_combo.currentData()[2]
 
     @property
-    def current_download_id(self) -> Optional[int]:
+    def current_item_index(self) -> Optional[QModelIndex]:
         index = self.list_view.currentIndex()
         if not index.isValid():
+            return None
+        return index
+    
+    @property
+    def current_download_id(self) -> Optional[int]:
+        index = self.current_item_index
+        if not index:
             return None
         return index.data(DownloadListModel.ItemRole)["id"]
     
     @property
     def current_download_title(self) -> str:
-        index = self.list_view.currentIndex()
+        index = self.current_item_index
         if not index.isValid():
             return ""
         return index.data(Qt.ItemDataRole.DisplayRole)
@@ -445,3 +471,38 @@ class DownloadManagerDialog(QDialog):
         menu.setAccessibleName("قائمة تنزيل جديد")
         menu.setFocus()
         menu.exec(self.btn_download.mapToGlobal(self.btn_download.rect().bottomLeft()))
+
+    def say_percentage(self):
+        """Use text-to-speech to announce the download percentage."""
+        index = self.current_item_index
+        if index:
+            percentage = index.data(DownloadListModel.percentageRole)
+            UniversalSpeech.say(percentage)
+
+    def say_status(self):
+        """Use text-to-speech to announce the download status."""
+        index = self.current_item_index
+        if index:
+            status = index.data(DownloadListModel.StatusRole).label
+            UniversalSpeech.say(status)
+
+    def say_speed(self):
+        """Use text-to-speech to announce the download speed."""
+        index = self.current_item_index
+        if index:
+            speed = index.data(DownloadListModel.speedRole)
+            UniversalSpeech.say(speed)
+
+    def say_downloaded_size(self):
+        """Use text-to-speech to announce the downloaded size."""
+        index = self.current_item_index
+        if index:
+            size = index.data(DownloadListModel.downloadedSizeRole)
+            UniversalSpeech.say(size)
+
+    def say_elapsed_time(self):
+        """Use text-to-speech to announce the elapsed time."""
+        index = self.current_item_index
+        if index:
+            elapsed = index.data(DownloadListModel.elapsedTimeRole)
+            UniversalSpeech.say(elapsed)

@@ -1,6 +1,5 @@
 
 from PyQt6.QtCore import Qt, QAbstractListModel, QModelIndex, QObject
-from PyQt6.QtGui import QKeySequence, QShortcut
 
 from core_functions.downloader.status import DownloadStatus, DownloadProgress
 from core_functions.downloader.manager import DownloadManager
@@ -105,16 +104,16 @@ class DownloadListModel(QAbstractListModel):
             return progress
 
         elif role == self.percentageRole:
-            self.get_item_percentage(download_id)
+            return self.get_item_percentage(download_id)
 
         elif role == self.speedRole:
-            self.get_item_speed(download_id)
+            return self.get_item_speed(download_id)
 
         elif role == self.downloadedSizeRole:
-            self.get_item_downloaded_size(download_id)
+            return self.get_item_downloaded_size(download_id)
 
         elif role == self.elapsedTimeRole:
-            self.get_item_elapsed_time(download_id)
+            return self.get_item_elapsed_time(download_id)
             
         return None
 
@@ -218,14 +217,14 @@ class DownloadListModel(QAbstractListModel):
     def get_download_progress(self, download_id: int) -> Optional[DownloadProgress]:
         return self._progress_cache.get(download_id)
 
-    def get_item_percentage(self, download_id: int) -> float:
+    def get_item_percentage(self, download_id: int) -> str:
         """Get current download percentage for a given download ID."""
         progress = self.get_download_progress(download_id)
         if not progress:
             download_data = self.manager.get_download(download_id)
             percentage = download_data.get("downloaded_bytes", 0) / download_data.get("total_bytes", 1) * 100 if download_data.get("total_bytes", 1) > 0 else 0
 
-        return percentage
+        return f"{percentage:.1f}%"
 
     def get_item_status(self, download_id: int) -> DownloadStatus:
         """Get current download status for a given download ID."""
