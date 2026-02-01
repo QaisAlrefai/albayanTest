@@ -228,8 +228,10 @@ class DownloadListModel(QAbstractListModel):
         if not progress:
             download_data = self.manager.get_download(download_id)
             percentage = download_data.get("downloaded_bytes", 0) / download_data.get("total_bytes", 1) * 100 if download_data.get("total_bytes", 1) > 0 else 0
+        else:
+            percentage = progress.percentage
 
-        return f"{percentage:.1f}%"
+        return f"{percentage:.0f}%"
 
     def get_item_status(self, download_id: int) -> DownloadStatus:
         """Get current download status for a given download ID."""
