@@ -591,42 +591,42 @@ class DownloadManagerDialog(QDialog):
         index = self.current_item_index
         if index:
             percentage = index.data(DownloadListModel.percentageRole)
-            UniversalSpeech.say(percentage)
+            UniversalSpeech.say(f"{percentage}، نسبة تقدم التنزيل.", force=True)
 
     def say_status(self):
         """Use text-to-speech to announce the download status."""
         index = self.current_item_index
         if index:
             status = index.data(DownloadListModel.StatusRole).label
-            UniversalSpeech.say(status)
+            UniversalSpeech.say(f"{status}، الحالة.", force=True)
 
     def say_speed(self):
         """Use text-to-speech to announce the download speed."""
         index = self.current_item_index
         if index:
             speed = index.data(DownloadListModel.speedRole)
-            UniversalSpeech.say(speed)
+            UniversalSpeech.say(f"{speed}، السرعة.", force=True)
 
     def say_downloaded_size(self):
         """Use text-to-speech to announce the downloaded size."""
         index = self.current_item_index
         if index:
             size = index.data(DownloadListModel.downloadedSizeRole)
-            UniversalSpeech.say(size)
+            UniversalSpeech.say(f"{size}.", force=True)
 
     def say_remaining_time(self):
         """Use text-to-speech to announce the remaining time."""
         index = self.current_item_index
         if index:
             remaining = index.data(DownloadListModel.remainingTimeRole)
-            UniversalSpeech.say(remaining)
+            UniversalSpeech.say(f"{remaining}، الوقت المتبقي.", force=True)
 
     def say_elapsed_time(self):
         """Use text-to-speech to announce the elapsed time."""
         index = self.current_item_index
         if index:
             elapsed = index.data(DownloadListModel.elapsedTimeRole)
-            UniversalSpeech.say(elapsed)
+            UniversalSpeech.say(f"{elapsed}، الوقت المنقضي.", force=True)
 
     def eventFilter(self, obj, event):
         if obj is self.list_view and event.type() == event.Type.KeyPress:
