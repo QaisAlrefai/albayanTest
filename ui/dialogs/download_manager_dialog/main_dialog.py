@@ -166,7 +166,6 @@ class DownloadManagerDialog(QDialog):
         ("Ctrl+P", self.toggle_pause_resume_current),
         ("Ctrl+Shift+P", self.toggle_pause_resume_all),
         ("Ctrl+Shift+S", self.toggle_start_cancel_all),
-        ("Ctrl+Shift+P", self.toggle_pause_resume_all),
                 ("Delete", self.delete_selected_item),
                 ("Ctrl+Delete", self.delete_all),
                         ("Shift+Delete", lambda: self.delete_by_status(DownloadStatus.COMPLETED, "المكتمل")),
@@ -376,9 +375,11 @@ class DownloadManagerDialog(QDialog):
 
         if status in {DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED}:
             self.cancel_current_item()
+            UniversalSpeech.say("تم إلغاء تنزيل الملف.", force=True)
 
         elif status in {DownloadStatus.ERROR, DownloadStatus.CANCELLED}:
             self.current_manager.restart(download_id)
+            UniversalSpeech.say("بدأ تنزيل الملف.", force=True)
         self.proxy_model.invalidateFilter()
 
     def toggle_pause_resume_all(self):
@@ -386,12 +387,14 @@ class DownloadManagerDialog(QDialog):
 
         if manager.has_active_downloads():
             manager.pause_all()
+            UniversalSpeech.say("تم إيقاف جميع التنزيلات.", force=True)
             self.proxy_model.invalidateFilter()
             return
 
         paused = manager.get_downloads([DownloadStatus.PAUSED])
         if paused:
             manager.resume_all()
+            UniversalSpeech.say("تم استئناف جميع التنزيلات.", force=True)
             self.proxy_model.invalidateFilter()
 
     def toggle_start_cancel_all(self):
@@ -405,6 +408,7 @@ class DownloadManagerDialog(QDialog):
 
         if active:
             self.cancel_all()
+            UniversalSpeech.say("تم إلغاء جميع التنزيلات.", force=True)
             return
 
         restartable = manager.get_downloads([
@@ -414,6 +418,7 @@ class DownloadManagerDialog(QDialog):
 
         if restartable:
             manager.restart_all()
+            UniversalSpeech.say("بدأ تنزيل الكل.", force=True)
             self.proxy_model.invalidateFilter()
 
 
@@ -428,9 +433,11 @@ class DownloadManagerDialog(QDialog):
 
         if status == DownloadStatus.DOWNLOADING:
             self.current_manager.pause(download_id)
+            UniversalSpeech.say("تم إيقاف التنزيل مؤقتًا.", force=True)
 
         elif status == DownloadStatus.PAUSED:
             self.current_manager.resume(download_id)
+            UniversalSpeech.say("تم استئناف التنزيل.", force=True)
         self.proxy_model.invalidateFilter()
 
 
