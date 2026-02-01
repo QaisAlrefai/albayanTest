@@ -2,8 +2,7 @@ from pathlib import Path
 import os
 import subprocess
 from typing import List, Dict, Optional, Union
-
-from PyQt6.QtGui import QKeySequence, QShortcut, QContextMenuEvent
+from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QMessageBox,
     QPushButton, QLabel, QLineEdit, QListView,

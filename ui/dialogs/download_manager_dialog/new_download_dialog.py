@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QComboBox,
     QPushButton, QLabel, QGridLayout
 )
+from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtCore import QTimer
 
 from core_functions.quran.types import Surah
@@ -93,6 +94,9 @@ class NewDownloadDialog(QDialog):
         btn_download.clicked.connect(self.accept)
         btn_close = QPushButton("إغلاق")
         btn_close.clicked.connect(self.close)
+        btn_close.setShortcut(QKeySequence("Ctrl+W"))
+        QShortcut(QKeySequence("Ctrl+F4"), self).activated.connect(self.close)
+
 
         btn_layout.addWidget(btn_download)
         btn_layout.addWidget(btn_close)
