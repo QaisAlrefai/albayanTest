@@ -334,7 +334,7 @@ class DownloadManagerDialog(QDialog):
             f"هل أنت متأكد من حذف العنصر التالي؟\n\n{self.current_download_title}"
         ):
             self.current_manager.delete(download_id)
-
+            UniversalSpeech.say("تم حذف العنصر المحدد.")
 
     def delete_by_status(self, status, status_label):
         if not self.user_message_service.confirm(
@@ -355,6 +355,9 @@ class DownloadManagerDialog(QDialog):
                 self.current_manager.delete_by_status(st)
         else:
             self.current_manager.delete_by_status(status)
+        UniversalSpeech.say(f"تم حذف العناصر {status_label}.")
+
+
 
     def cancel_current_item(self):
         if self.user_message_service.confirm(
@@ -362,40 +365,98 @@ class DownloadManagerDialog(QDialog):
             f"هل أنت متأكد من إلغاء تنزيل العنصر التالي؟\n\n{self.current_download_title}"
         ):
             self.current_manager.cancel(self.current_download_id)
+            UniversalSpeech.say("تم إلغاء تنزيل الملف.")
 
+
+
+
+
+
+
+    def pause_current_item(self):
+        self.current_manager.pause(self.current_download_id)
+        self.proxy_model.invalidateFilter()
+        UniversalSpeech.say("تم إيقاف تنزيل الملف مؤقتًا.")
+
+
+    def pause_all(self):
+        self.current_manager.pause_all()
+        self.proxy_model.invalidateFilter()
+        UniversalSpeech.say("تم إيقاف جميع التنزيلات مؤقتًا.")
+
+
+    def restart_current_item(self):
+        self.current_manager.restart(self.current_download_id)
+        self.proxy_model.invalidateFilter()
+        UniversalSpeech.say("تتم إعادة محاولة تنزيل الملف.")
+
+
+    def restart_all(self):
+        self.current_manager.restart_all()
+        self.proxy_model.invalidateFilter()
+        UniversalSpeech.say("تتم إعادة محاولة تنزيل جميع الملفات.")
+
+
+    def cancel_all(self):
+        if self.user_message_service.confirm(
+            "تأكيد إلغاء الكل",
+            "هل أنت متأكد من إلغاء جميع التنزيلات؟",
+        ):
+            self.current_manager.cancel_all()
+            self.proxy_model.invalidateFilter()
+            UniversalSpeech.say("تم إلغاء جميع التنزيلات.")
+
+    def resume_current_item(self):
+        self.current_manager.resume(self.current_download_id)
+        self.proxy_model.invalidateFilter()
+        UniversalSpeech.say("تم استئناف تنزيل الملف.")
+
+    def resume_all(self):
+        self.current_manager.resume_all()
+        self.proxy_model.invalidateFilter()
+        UniversalSpeech.say("تم استئناف جميع التنزيلات.")
 
     def toggle_start_cancel_current(self):
         index = self.current_item_index
         if not index:
             return
 
-        data = index.data(DownloadListModel.ItemRole)
-        status = data["status"]
-        download_id = data["id"]
+        status = index.data(DownloadListModel.ItemRole)["status"]
 
-        if status in {DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED}:
+        if status in {
+            DownloadStatus.PENDING,
+            DownloadStatus.DOWNLOADING,
+            DownloadStatus.PAUSED
+        }:
             self.cancel_current_item()
-            UniversalSpeech.say("تم إلغاء تنزيل الملف.", force=True)
+        elif status in {
+            DownloadStatus.ERROR,
+            DownloadStatus.CANCELLED
+        }:
+            self.restart_current_item()
 
-        elif status in {DownloadStatus.ERROR, DownloadStatus.CANCELLED}:
-            self.current_manager.restart(download_id)
-            UniversalSpeech.say("بدأ تنزيل الملف.", force=True)
-        self.proxy_model.invalidateFilter()
+    def toggle_pause_resume_current(self):
+        index = self.current_item_index
+        if not index:
+            return
+
+        status = index.data(DownloadListModel.ItemRole)["status"]
+
+        if status == DownloadStatus.DOWNLOADING:
+            self.pause_current_item()
+        elif status == DownloadStatus.PAUSED:
+            self.resume_current_item()
 
     def toggle_pause_resume_all(self):
         manager = self.current_manager
 
         if manager.has_active_downloads():
-            manager.pause_all()
-            UniversalSpeech.say("تم إيقاف جميع التنزيلات.", force=True)
-            self.proxy_model.invalidateFilter()
+            self.pause_all()
             return
 
-        paused = manager.get_downloads([DownloadStatus.PAUSED])
-        if paused:
-            manager.resume_all()
-            UniversalSpeech.say("تم استئناف جميع التنزيلات.", force=True)
-            self.proxy_model.invalidateFilter()
+        if manager.get_downloads([DownloadStatus.PAUSED]):
+            self.resume_all()
+
 
     def toggle_start_cancel_all(self):
         manager = self.current_manager
@@ -408,63 +469,17 @@ class DownloadManagerDialog(QDialog):
 
         if active:
             self.cancel_all()
-            UniversalSpeech.say("تم إلغاء جميع التنزيلات.", force=True)
             return
 
-        restartable = manager.get_downloads([
+        if manager.get_downloads([
             DownloadStatus.ERROR,
             DownloadStatus.CANCELLED
-        ])
-
-        if restartable:
-            manager.restart_all()
-            UniversalSpeech.say("بدأ تنزيل الكل.", force=True)
-            self.proxy_model.invalidateFilter()
-
-
-    def toggle_pause_resume_current(self):
-        index = self.current_item_index
-        if not index:
-            return
-
-        data = index.data(DownloadListModel.ItemRole)
-        status = data["status"]
-        download_id = data["id"]
-
-        if status == DownloadStatus.DOWNLOADING:
-            self.current_manager.pause(download_id)
-            UniversalSpeech.say("تم إيقاف التنزيل مؤقتًا.", force=True)
-
-        elif status == DownloadStatus.PAUSED:
-            self.current_manager.resume(download_id)
-            UniversalSpeech.say("تم استئناف التنزيل.", force=True)
-        self.proxy_model.invalidateFilter()
+        ]):
+            self.restart_all()
 
 
 
-    def pause_current_item(self):
-        self.current_manager.pause(self.current_download_id)
-        self.proxy_model.invalidateFilter()
 
-    def pause_all(self):
-        self.current_manager.pause_all()
-        self.proxy_model.invalidateFilter()
-
-    def restart_current_item(self):
-        self.current_manager.restart(self.current_download_id)
-        self.proxy_model.invalidateFilter()
-
-    def restart_all(self):
-        self.current_manager.restart_all()
-        self.proxy_model.invalidateFilter()
-
-    def cancel_all(self):
-        if self.user_message_service.confirm(
-            "تأكيد إلغاء الكل",
-            "هل أنت متأكد من إلغاء جميع التنزيلات؟",
-        ):
-            self.current_manager.cancel_all()
-            self.proxy_model.invalidateFilter()
 
     def delete_all(self):
         if self.user_message_service.confirm(
@@ -472,6 +487,7 @@ class DownloadManagerDialog(QDialog):
             "هل أنت متأكد من حذف جميع العناصر؟",
         ):
             self.current_manager.delete_all()
+            UniversalSpeech.say("تم حذف جميع العناصر.")
 
 
     def get_current_file_path(self) -> Optional[Path]:
