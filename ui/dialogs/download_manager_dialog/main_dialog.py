@@ -137,18 +137,9 @@ class DownloadManagerDialog(QDialog):
         self.btn_delete.clicked.connect(self.show_delete_menu)
         self.btn_close.clicked.connect(self.close)
         
-        # Manager signals are handled by the models internally for data updates.
-        # However, for SessionProgressBar, it might still need direct manager signals or we can hook them up.
-        # The session progress bar likely connects to managers internally if passed in `set_managers`?
-        # create `set_managers` in `main_dialog.__init__` handles it.
-        # But we also have `on_finished` in original code that was updating tooltips. Model handles this now.
-        
-        # We still need to listen to add events effectively if session progress needs recalc, 
-        # but `SessionProgressBar` implementation likely handles signals from managers directly.
-        
-        # Let's ensure session progress updates when new downloads are added via the dialog.
 
-        # Let's ensure session progress updates when new downloads are added via the dialog.
+
+
         self.surah_manager.downloads_added.connect(lambda _: self.session_progress.recalculate_totals())
         self.ayah_manager.downloads_added.connect(lambda _: self.session_progress.recalculate_totals())
         
@@ -167,6 +158,21 @@ class DownloadManagerDialog(QDialog):
             (QKeySequence("D"), self.say_downloaded_size),
             (QKeySequence("R"), self.say_remaining_time),
             (QKeySequence("E"), self.say_elapsed_time),
+        ("Ctrl+S", self.toggle_start_cancel_current),
+        ("Ctrl+P", self.toggle_pause_resume_current),
+
+        ("Ctrl+Shift+P", self.toggle_pause_resume_all),
+        ("Ctrl+Shift+S", self.toggle_start_cancel_all),
+        ("Ctrl+Shift+P", self.toggle_pause_resume_all),
+                ("Delete", self.delete_selected_item),
+                ("Ctrl+Delete", self.delete_all),
+                ("Shift+Delete",
+         lambda: self.delete_by_status(DownloadStatus.COMPLETED, "المكتمل")),
+        ("Alt+Delete",
+         lambda: self.delete_by_status("incomplete", "غير المكتمل")),
+                        ("Ctrl+O", self.open_current_item),
+        ("Ctrl+F", self.open_current_item_folder),
+        ("Ctrl+I", self.show_selected_item_info),
         )
 
         for seq, func in shortcuts:
@@ -319,11 +325,13 @@ class DownloadManagerDialog(QDialog):
         download_id = self.current_download_id
         if not download_id:
             return
-        
-            if  self.user_message_service.confirm(
-                "تأكيد الحذف", f"هل أنت متأكد من حذف العنصر التالي؟\n\n{self.current_download_title}"
-            ):
-                self.current_manager.delete(download_id)
+
+        if self.user_message_service.confirm(
+            "تأكيد الحذف",
+            f"هل أنت متأكد من حذف العنصر التالي؟\n\n{self.current_download_title}"
+        ):
+            self.current_manager.delete(download_id)
+
 
     def delete_by_status(self, status, status_label):
         if not self.user_message_service.confirm(
@@ -351,6 +359,77 @@ class DownloadManagerDialog(QDialog):
             f"هل أنت متأكد من إلغاء تنزيل العنصر التالي؟\n\n{self.current_download_title}"
         ):
             self.current_manager.cancel(self.current_download_id)
+
+
+    def toggle_start_cancel_current(self):
+        index = self.current_item_index
+        if not index:
+            return
+
+        data = index.data(DownloadListModel.ItemRole)
+        status = data["status"]
+        download_id = data["id"]
+
+        if status in {DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED}:
+            self.cancel_current_item()
+
+        elif status in {DownloadStatus.ERROR, DownloadStatus.CANCELLED}:
+            self.current_manager.restart(download_id)
+        self.proxy_model.invalidateFilter()
+
+    def toggle_pause_resume_all(self):
+        manager = self.current_manager
+
+        if manager.has_active_downloads():
+            manager.pause_all()
+            self.proxy_model.invalidateFilter()
+            return
+
+        paused = manager.get_downloads([DownloadStatus.PAUSED])
+        if paused:
+            manager.resume_all()
+            self.proxy_model.invalidateFilter()
+
+    def toggle_start_cancel_all(self):
+        manager = self.current_manager
+
+        active = manager.get_downloads([
+            DownloadStatus.PENDING,
+            DownloadStatus.DOWNLOADING,
+            DownloadStatus.PAUSED
+        ])
+
+        if active:
+            self.cancel_all()
+            return
+
+        restartable = manager.get_downloads([
+            DownloadStatus.ERROR,
+            DownloadStatus.CANCELLED
+        ])
+
+        if restartable:
+            manager.restart_all()
+            self.proxy_model.invalidateFilter()
+
+
+    def toggle_pause_resume_current(self):
+        index = self.current_item_index
+        if not index:
+            return
+
+        data = index.data(DownloadListModel.ItemRole)
+        status = data["status"]
+        download_id = data["id"]
+
+        if status == DownloadStatus.DOWNLOADING:
+            self.current_manager.pause(download_id)
+
+        elif status == DownloadStatus.PAUSED:
+            self.current_manager.resume(download_id)
+        self.proxy_model.invalidateFilter()
+
+
 
     def pause_current_item(self):
         self.current_manager.pause(self.current_download_id)
@@ -383,6 +462,33 @@ class DownloadManagerDialog(QDialog):
         ):
             self.current_manager.delete_all()
 
+
+    def get_current_file_path(self) -> Optional[Path]:
+        index = self.current_item_index
+        if not index:
+            return None
+
+        data = index.data(DownloadListModel.ItemRole)
+        if not data:
+            return None
+
+        file_path = Path(data["folder_path"]) / data["filename"]
+        return file_path if file_path.exists() else None
+
+    def open_current_item(self):
+        file_path = self.get_current_file_path()
+        if not file_path:
+            return
+        self.open_in_default_player(file_path)
+
+    def open_current_item_folder(self):
+        file_path = self.get_current_file_path()
+        if not file_path:
+            return
+        self.open_containing_folder(file_path)
+
+
+
     def show_delete_menu(self):
         menu = QMenu(self)
         menu.addAction("حذف الكل", self.delete_all)
@@ -395,6 +501,10 @@ class DownloadManagerDialog(QDialog):
         menu.setAccessibleName("قائمة حذف")
         menu.setFocus()
         menu.exec(self.btn_delete.mapToGlobal(self.btn_delete.rect().bottomLeft()))
+
+
+
+
 
     def download_surahs(self):
         surahs = self.parent.quran_manager.get_surahs()
