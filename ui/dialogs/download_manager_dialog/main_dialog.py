@@ -3,7 +3,7 @@ import os
 import subprocess
 from typing import List, Dict, Optional, Union
 
-from PyQt6.QtGui import QKeySequence, QShortcut
+from PyQt6.QtGui import QKeySequence, QShortcut, QContextMenuEvent
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QMessageBox,
     QPushButton, QLabel, QLineEdit, QListView,
@@ -58,11 +58,13 @@ class DownloadManagerDialog(QDialog):
 
         self.user_message_service = UserMessageService(self)
 
+
         self.setWindowTitle("مدير التنزيلات")
         self.setMinimumWidth(520)
 
         self._setup_ui()
         self.set_shortcuts()
+        self.list_view.installEventFilter(self)
         self.session_progress.set_managers([self.surah_manager, self.ayah_manager])
         self._connect_signals()
         # No initial update_list needed, model handles it
@@ -119,6 +121,9 @@ class DownloadManagerDialog(QDialog):
         self.btn_download = QPushButton("تنزيل جديد")
         self.btn_delete = QPushButton("حذف")
         self.btn_close = QPushButton("إغلاق")
+        self.btn_close.setShortcut(QKeySequence("Ctrl+W"))
+        QShortcut(QKeySequence("Ctrl+F4"), self).activated.connect(self.close)
+
 
         btn_layout.addWidget(self.btn_download)
         btn_layout.addWidget(self.btn_delete)
@@ -160,21 +165,21 @@ class DownloadManagerDialog(QDialog):
             (QKeySequence("E"), self.say_elapsed_time),
         ("Ctrl+S", self.toggle_start_cancel_current),
         ("Ctrl+P", self.toggle_pause_resume_current),
-
         ("Ctrl+Shift+P", self.toggle_pause_resume_all),
         ("Ctrl+Shift+S", self.toggle_start_cancel_all),
         ("Ctrl+Shift+P", self.toggle_pause_resume_all),
                 ("Delete", self.delete_selected_item),
                 ("Ctrl+Delete", self.delete_all),
-                ("Shift+Delete",
-         lambda: self.delete_by_status(DownloadStatus.COMPLETED, "المكتمل")),
-        ("Alt+Delete",
-         lambda: self.delete_by_status("incomplete", "غير المكتمل")),
+                        ("Shift+Delete", lambda: self.delete_by_status(DownloadStatus.COMPLETED, "المكتمل")),
+        ("Alt+Delete", lambda: self.delete_by_status("incomplete", "غير المكتمل")),
+        ("Ctrl+N", self.show_download_menu),
                         ("Ctrl+O", self.open_current_item),
         ("Ctrl+F", self.open_current_item_folder),
         ("Ctrl+I", self.show_selected_item_info),
         )
 
+        QShortcut(QKeySequence(Qt.KeyboardModifier.ControlModifier | Qt.Key.Key_Return), self).activated.connect(self.download_surahs)
+        QShortcut(QKeySequence(Qt.KeyboardModifier.ShiftModifier | Qt.Key.Key_Return), self).activated.connect(self.download_ayahs)
         for seq, func in shortcuts:
             shortcut = QShortcut(seq, self)
             shortcut.activated.connect(func)
@@ -623,3 +628,23 @@ class DownloadManagerDialog(QDialog):
         if index:
             elapsed = index.data(DownloadListModel.elapsedTimeRole)
             UniversalSpeech.say(elapsed)
+
+    def eventFilter(self, obj, event):
+        if obj is self.list_view and event.type() == event.Type.KeyPress:
+            key = event.key()
+            modifiers = event.modifiers()
+
+            if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter) and modifiers == Qt.KeyboardModifier.NoModifier:
+                self.open_context_menu_from_keyboard()
+                return True
+
+        return super().eventFilter(obj, event)
+
+    def open_context_menu_from_keyboard(self):
+        index = self.current_item_index
+        if not index:
+            return
+
+        rect = self.list_view.visualRect(index)
+        pos = rect.center()
+        self.show_context_menu(pos)
