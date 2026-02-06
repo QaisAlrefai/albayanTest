@@ -265,7 +265,7 @@ class DownloadManagerDialog(QDialog):
         start_action.setEnabled(current_status in {DownloadStatus.ERROR, DownloadStatus.CANCELLED})
         start_all.setEnabled(len(self.current_manager.get_downloads([DownloadStatus.CANCELLED, DownloadStatus.ERROR])) > 0)
         cancel_action.setEnabled(current_status in {DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED})
-        cancel_all_action.setEnabled(len(self.current_manager.get_downloads([DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED])) > 0)
+        cancel_all_action.setEnabled(len(self.current_manager.get_downloads([DownloadStatus.PENDING, DownloadStatus.DOWNLOADING])) > 0)
         delete_action.setEnabled(self.current_download_id is not None)
         delete_all_action.setEnabled(len(self.current_manager.get_downloads()) > 0)
 
