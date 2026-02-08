@@ -267,6 +267,10 @@ class JuzInfo(Base):
             (SELECT numberInSurah FROM quran q3 WHERE q3.juz = q1.juz ORDER BY number DESC LIMIT 1) AS end_ayah_number,
             (SELECT sura_name FROM quran q4 WHERE q4.juz = q1.juz ORDER BY number LIMIT 1) AS start_sura_name,
             (SELECT sura_name FROM quran q5 WHERE q5.juz = q1.juz ORDER BY number DESC LIMIT 1) AS end_sura_name,
+            (SELECT numberInSurah FROM quran q6 WHERE q6.juz = q1.juz ORDER BY LENGTH(text) DESC LIMIT 1) AS longest_ayah_number,
+            (SELECT sura_name FROM quran q7 WHERE q7.juz = q1.juz ORDER BY LENGTH(text) DESC LIMIT 1) AS longest_ayah_sura,
+            (SELECT numberInSurah FROM quran q8 WHERE q8.juz = q1.juz ORDER BY LENGTH(text) ASC LIMIT 1) AS shortest_ayah_number,
+            (SELECT sura_name FROM quran q9 WHERE q9.juz = q1.juz ORDER BY LENGTH(text) ASC LIMIT 1) AS shortest_ayah_sura,
             (SELECT GROUP_CONCAT(REPLACE(sura_name, 'سورة ', ''), ', ') FROM (SELECT DISTINCT sura_name FROM quran WHERE juz = q1.juz)) AS surah_names
         FROM quran q1
         WHERE juz = ?
@@ -296,6 +300,8 @@ class JuzInfo(Base):
 عدد السور في الجزء: {data["count_surahs"]}.
 عدد الآيات في الجزء: {data["count_ayahs"]}.
 السور في الجزء: {data["surah_names"]}.
+أطول آية في الجزء: الآية {data["longest_ayah_number"]} من {data["longest_ayah_sura"]}.
+أقصر آية في الجزء: الآية {data["shortest_ayah_number"]} من {data["shortest_ayah_sura"]}.
 """
         logger.debug(f"Formatted information for Juz {data['juz_number']}.")
         return text.strip()
@@ -335,6 +341,10 @@ class HizbInfo(Base):
             (SELECT numberInSurah FROM quran WHERE hizb = q1.hizb ORDER BY number DESC LIMIT 1) AS end_ayah_number,
             (SELECT sura_name FROM quran WHERE hizb = q1.hizb ORDER BY number LIMIT 1) AS start_sura_name,
             (SELECT sura_name FROM quran WHERE hizb = q1.hizb ORDER BY number DESC LIMIT 1) AS end_sura_name,
+            (SELECT numberInSurah FROM quran WHERE hizb = q1.hizb ORDER BY LENGTH(text) DESC LIMIT 1) AS longest_ayah_number,
+            (SELECT sura_name FROM quran WHERE hizb = q1.hizb ORDER BY LENGTH(text) DESC LIMIT 1) AS longest_ayah_sura,
+            (SELECT numberInSurah FROM quran WHERE hizb = q1.hizb ORDER BY LENGTH(text) ASC LIMIT 1) AS shortest_ayah_number,
+            (SELECT sura_name FROM quran WHERE hizb = q1.hizb ORDER BY LENGTH(text) ASC LIMIT 1) AS shortest_ayah_sura,
             (SELECT GROUP_CONCAT(REPLACE(sura_name, 'سورة ', ''), ', ') FROM (SELECT DISTINCT sura_name FROM quran WHERE hizb = q1.hizb)) AS surah_names
         FROM quran q1
         WHERE hizb = ?
@@ -364,6 +374,8 @@ class HizbInfo(Base):
 عدد السور في الحزب: {data["count_surahs"]}.
 عدد الآيات في الحزب: {data["count_ayahs"]}.
 السور في الحزب: {data["surah_names"]}.
+أطول آية في الحزب: الآية {data["longest_ayah_number"]} من {data["longest_ayah_sura"]}.
+أقصر آية في الحزب: الآية {data["shortest_ayah_number"]} من {data["shortest_ayah_sura"]}.
 """
         logger.debug(f"Formatted information for Hizb {data['hizb_number']}.")
         return text.strip()
@@ -408,6 +420,10 @@ class QuarterInfo(Base):
             (SELECT numberInSurah FROM quran WHERE hizbQuarter = q1.hizbQuarter ORDER BY number DESC LIMIT 1) AS end_ayah_number,
             (SELECT sura_name FROM quran WHERE hizbQuarter = q1.hizbQuarter ORDER BY number LIMIT 1) AS start_sura_name,
             (SELECT sura_name FROM quran WHERE hizbQuarter = q1.hizbQuarter ORDER BY number DESC LIMIT 1) AS end_sura_name,
+            (SELECT numberInSurah FROM quran WHERE hizbQuarter = q1.hizbQuarter ORDER BY LENGTH(text) DESC LIMIT 1) AS longest_ayah_number,
+            (SELECT sura_name FROM quran WHERE hizbQuarter = q1.hizbQuarter ORDER BY LENGTH(text) DESC LIMIT 1) AS longest_ayah_sura,
+            (SELECT numberInSurah FROM quran WHERE hizbQuarter = q1.hizbQuarter ORDER BY LENGTH(text) ASC LIMIT 1) AS shortest_ayah_number,
+            (SELECT sura_name FROM quran WHERE hizbQuarter = q1.hizbQuarter ORDER BY LENGTH(text) ASC LIMIT 1) AS shortest_ayah_sura,
             (SELECT GROUP_CONCAT(REPLACE(sura_name, 'سورة ', ''), ', ') FROM (SELECT DISTINCT sura_name FROM quran WHERE hizbQuarter = q1.hizbQuarter)) AS surah_names
         FROM quran q1
         WHERE hizbQuarter = ?
@@ -437,6 +453,8 @@ class QuarterInfo(Base):
 عدد السور في الربع: {data["count_surahs"]}.
 عدد الآيات في الربع: {data["count_ayahs"]}.
 السور في الربع: {data["surah_names"]}.
+أطول آية في الربع: الآية {data["longest_ayah_number"]} من {data["longest_ayah_sura"]}.
+أقصر آية في الربع: الآية {data["shortest_ayah_number"]} من {data["shortest_ayah_sura"]}.
 """
         logger.debug(f"Formatted information for Quarter {data['quarter_number']}.")
         return text.strip()
@@ -469,6 +487,10 @@ class PageInfo(Base):
             (SELECT numberInSurah FROM quran WHERE page = q1.page ORDER BY number DESC LIMIT 1) AS end_ayah_number,
             (SELECT sura_name FROM quran WHERE page = q1.page ORDER BY number LIMIT 1) AS start_sura_name,
             (SELECT sura_name FROM quran WHERE page = q1.page ORDER BY number DESC LIMIT 1) AS end_sura_name,
+            (SELECT numberInSurah FROM quran WHERE page = q1.page ORDER BY LENGTH(text) DESC LIMIT 1) AS longest_ayah_number,
+            (SELECT sura_name FROM quran WHERE page = q1.page ORDER BY LENGTH(text) DESC LIMIT 1) AS longest_ayah_sura,
+            (SELECT numberInSurah FROM quran WHERE page = q1.page ORDER BY LENGTH(text) ASC LIMIT 1) AS shortest_ayah_number,
+            (SELECT sura_name FROM quran WHERE page = q1.page ORDER BY LENGTH(text) ASC LIMIT 1) AS shortest_ayah_sura,
             (SELECT GROUP_CONCAT(REPLACE(sura_name, 'سورة ', ''), ', ') FROM (SELECT DISTINCT sura_name FROM quran WHERE page = q1.page)) AS surah_names
         FROM quran q1
         WHERE page = ?
@@ -498,6 +520,8 @@ class PageInfo(Base):
  عدد السور في الصفحة: {data["count_surahs"]}.
 عدد الآيات في الصفحة: {data["count_ayahs"]}.
 السور في الصفحة: {data["surah_names"]}.
+أطول آية في الصفحة: الآية {data["longest_ayah_number"]} من {data["longest_ayah_sura"]}.
+أقصر آية في الصفحة: الآية {data["shortest_ayah_number"]} من {data["shortest_ayah_sura"]}.
 """
         logger.debug(f"Formatted information for Page {data['page_number']}.")
         return text.strip()
