@@ -81,7 +81,7 @@ class GoToDialog(QDialog):
         button_layout = QHBoxLayout()
 
         self.go_to_button = QPushButton(self)
-        self.go_to_button.setIcon(qta.icon("fa.location-arrow"))
+        self.go_to_button.setIcon(qta.icon("fa5s.location-arrow"))
         self.go_to_button.setAccessibleName("اذهب")
         self.go_to_button.setDefault(True)
         self.go_to_button.clicked.connect(self.accept)
@@ -90,7 +90,7 @@ class GoToDialog(QDialog):
 
         self.cancel_button = QPushButton(self)
         self.cancel_button.setShortcut(QKeySequence("Ctrl+W"))
-        self.cancel_button.setIcon(qta.icon("fa.times"))
+        self.cancel_button.setIcon(qta.icon("fa5s.times"))
         self.cancel_button.setAccessibleName("إلغاء")
         self.cancel_button.clicked.connect(self.reject)
         button_layout.addWidget(self.cancel_button)

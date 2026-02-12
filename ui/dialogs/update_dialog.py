@@ -72,7 +72,7 @@ class UpdateDialog(QDialog):
 
         self.cancel_button = QPushButton("إلغاء")
         self.cancel_button.setShortcut(QKeySequence("Ctrl+W"))
-        self.cancel_button.setIcon(qta.icon("fa.times"))
+        self.cancel_button.setIcon(qta.icon("fa5s.times"))
 
         self.update_button.clicked.connect(self.on_update)
         self.cancel_button.clicked.connect(self.reject)

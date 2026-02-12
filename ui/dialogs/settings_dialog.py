@@ -57,26 +57,26 @@ class SettingsDialog(QDialog):
         
         # Adding items to the tree with icons
         general_item = QTreeWidgetItem(["الإعدادات العامة"])
-        general_item.setIcon(0, qta.icon("fa.cogs"))
+        general_item.setIcon(0, qta.icon("fa5s.cogs"))
 
         audio_item = QTreeWidgetItem(["الصوت"])
-        audio_item.setIcon(0, qta.icon("fa.volume-up"))
+        audio_item.setIcon(0, qta.icon("fa5s.volume-up"))
 
         self.listening_item = QTreeWidgetItem(["الاستماع"])
-        self.listening_item.setIcon(0, qta.icon("fa.headphones"))
+        self.listening_item.setIcon(0, qta.icon("fa5s.headphones"))
 
         reading_item = QTreeWidgetItem(["القراءة"])
-        reading_item.setIcon(0, qta.icon("fa.book"))
+        reading_item.setIcon(0, qta.icon("fa5s.book"))
 
         surah_player_item = QTreeWidgetItem(["مشغل السور"])
-        surah_player_item.setIcon(0, qta.icon("fa.play"))
+        surah_player_item.setIcon(0, qta.icon("fa5s.play"))
 
         downloading_item = QTreeWidgetItem(["التنزيل"])
-        downloading_item.setIcon(0, qta.icon("fa.download"))
+        downloading_item.setIcon(0, qta.icon("fa5s.download"))
  
 
         search_item = QTreeWidgetItem(["البحث"])
-        search_item.setIcon(0, qta.icon("fa.search"))
+        search_item.setIcon(0, qta.icon("fa5s.search"))
         
         # Adding top-level items
         self.tree_widget.addTopLevelItem(general_item)

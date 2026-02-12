@@ -106,23 +106,23 @@ class SuraPlayerWindow(QMainWindow):
 
     def create_control_buttons(self):
         self.control_layout = QHBoxLayout()
-        self.rewind_button = QPushButton(qta.icon("fa.backward"), "")
+        self.rewind_button = QPushButton(qta.icon("fa5s.backward"), "")
         self.rewind_button.setAccessibleName("ترجيع")
-        self.play_pause_button = QPushButton(qta.icon("fa.play"), "")
+        self.play_pause_button = QPushButton(qta.icon("fa5s.play"), "")
         self.play_pause_button.setAccessibleName("تشغيل")
-        self.stop_button = QPushButton(qta.icon("fa.stop"), "")
+        self.stop_button = QPushButton(qta.icon("fa5s.stop"), "")
         self.stop_button.setAccessibleName("إيقاف التشغيل")
-        self.forward_button = QPushButton(qta.icon("fa.forward"), "")
+        self.forward_button = QPushButton(qta.icon("fa5s.forward"), "")
         self.forward_button.setAccessibleName("تقديم")
-        self.previous_surah_button = QPushButton(qta.icon("fa.step-backward"), "")
+        self.previous_surah_button = QPushButton(qta.icon("fa5s.step-backward"), "")
         self.previous_surah_button.setAccessibleName("السورة السابقة")
-        self.next_surah_button = QPushButton(qta.icon("fa.step-forward"), "")
+        self.next_surah_button = QPushButton(qta.icon("fa5s.step-forward"), "")
         self.next_surah_button.setAccessibleName("السورة التالية")
-        self.volume_down_button = QPushButton(qta.icon("fa.volume-down"), "")
+        self.volume_down_button = QPushButton(qta.icon("fa5s.volume-down"), "")
         self.volume_down_button.setAccessibleName("خفض الصوت")
-        self.volume_up_button = QPushButton(qta.icon("fa.volume-up"), "")
+        self.volume_up_button = QPushButton(qta.icon("fa5s.volume-up"), "")
         self.volume_up_button.setAccessibleName("رفع الصوت")
-        self.close_button = QPushButton(qta.icon("fa.window-close"), "")
+        self.close_button = QPushButton(qta.icon("fa5s.window-close"), "")
         self.close_button.setAccessibleName("إغلاق المشغل")
 
         self.buttons = [
@@ -449,13 +449,13 @@ class SuraPlayerWindow(QMainWindow):
         self.menubar.stop_action.setEnabled(not is_stop)
 
         if self.player.is_playing() or self.player.is_stalled():
-            self.play_pause_button.setIcon(qta.icon("fa.pause"))
+            self.play_pause_button.setIcon(qta.icon("fa5s.pause"))
             self.play_pause_button.setAccessibleName("إيقاف مؤقت")
             self.menubar.play_pause_action.setText("إيقاف مؤقت")
             self.statusBar().showMessage("تشغيل")
             self.setAccessibleDescription(F"أنت تستمع إلى سورة {self.surah_combo.currentText()}، للقارئ {self.reciter_combo.currentText().split(' - ')[0]}، اضغط Ctrl+F لتغيير السورة أو القارئ.")
         else:
-            self.play_pause_button.setIcon(qta.icon("fa.play"))
+            self.play_pause_button.setIcon(qta.icon("fa5s.play"))
             self.play_pause_button.setAccessibleName("تشغيل")
             self.menubar.play_pause_action.setText("تشغيل")
             self.statusBar().showMessage("إيقاف مؤقت")

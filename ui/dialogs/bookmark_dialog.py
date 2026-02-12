@@ -38,24 +38,24 @@ class BookmarkDialog(QDialog):
         self.bookmark_list.setAccessibleDescription(self.bookmarks_label.text())
 
         self.update_button = QPushButton("تعديل الاسم")
-        self.update_button.setIcon(qta.icon("fa.pencil"))
+        self.update_button.setIcon(qta.icon("fa5s.edit"))
         self.update_button.setShortcut(QKeySequence("F2"))
 
         self.delete_button = QPushButton("حذف العلامة")
-        self.delete_button.setIcon(qta.icon("fa.trash"))
+        self.delete_button.setIcon(qta.icon("fa5s.trash"))
         self.delete_button.setShortcut(QKeySequence(Qt.Key.Key_Delete))
                 
                 
         self.delete_all_button = QPushButton("حذف جميع العلامات")
-        self.delete_all_button.setIcon(qta.icon("fa.trash-o"))
+        self.delete_all_button.setIcon(qta.icon("fa5s.trash-alt"))
         self.delete_all_button.setShortcut(QKeySequence("Ctrl+Delete"))
 
         self.go_button = QPushButton("الذهاب إلى العلامة")
-        self.go_button.setIcon(qta.icon("fa.location-arrow"))
+        self.go_button.setIcon(qta.icon("fa5s.location-arrow"))
         self.go_button.setDefault(True)
         
         self.cancel_button = QPushButton("إغلاق")
-        self.cancel_button.setIcon(qta.icon("fa.times"))
+        self.cancel_button.setIcon(qta.icon("fa5s.times"))
         self.cancel_button.setShortcut(QKeySequence("Ctrl+W"))
         close_shortcut = QShortcut(QKeySequence("Ctrl+F4"), self)
         close_shortcut.activated.connect(self.reject)

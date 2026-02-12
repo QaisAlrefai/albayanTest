@@ -49,14 +49,14 @@ class InfoDialog(QDialog):
 
         # Copy button
         copy_button = QPushButton('نسخ', self)
-        copy_button.setIcon(qta.icon("fa.copy"))
+        copy_button.setIcon(qta.icon("fa5s.copy"))
         copy_button.clicked.connect(self.copy_text)
         copy_button.setShortcut(QKeySequence("Shift+C"))
         copy_button.setStyleSheet('background-color: red; color: white;')
 
         # Message to you button (conditionally added)
         message_to_you_button = QPushButton('رسالة لك', self)
-        message_to_you_button.setIcon(qta.icon("fa.envelope"))
+        message_to_you_button.setIcon(qta.icon("fa5s.envelope"))
         message_to_you_button.clicked.connect(self.OnNewMessage)
         message_to_you_button.setShortcut(QKeySequence("Shift+M"))
         message_to_you_button.setStyleSheet('background-color: red; color: white;')
@@ -68,7 +68,7 @@ class InfoDialog(QDialog):
 
         # Save as Image button (conditionally added)
         save_img_button = QPushButton('حفظ كصورة', self)
-        save_img_button.setIcon(qta.icon("fa.image"))
+        save_img_button.setIcon(qta.icon("fa5s.image"))
         save_img_button.clicked.connect(self.save_text_as_image)
         save_img_button.setStyleSheet('background-color: red; color: white;')
         save_img_button.setVisible(self.save_message_as_img_button)
@@ -76,7 +76,7 @@ class InfoDialog(QDialog):
 
         # Close button
         close_button = QPushButton('إغلاق', self)
-        close_button.setIcon(qta.icon("fa.times"))
+        close_button.setIcon(qta.icon("fa5s.times"))
         close_button.setShortcut(QKeySequence("Ctrl+W"))
         close_button.clicked.connect(self.reject)
         close_button.setStyleSheet('background-color: red; color: white;')

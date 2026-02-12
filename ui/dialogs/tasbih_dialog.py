@@ -29,53 +29,53 @@ class TasbihDialog(QDialog):
 
 
         self.openButton = QPushButton()
-        self.openButton.setIcon(qta.icon("fa.folder-open"))
+        self.openButton.setIcon(qta.icon("fa5s.folder-open"))
         self.openButton.setToolTip("اختيار التسبيح")
         self.openButton.setAccessibleName("اختيار التسبيح")
         
         self.addButton = QPushButton()
-        self.addButton.setIcon(qta.icon("fa.plus"))
+        self.addButton.setIcon(qta.icon("fa5s.plus"))
         self.addButton.setToolTip("إضافة تسبيح")
         self.addButton.setAccessibleName("إضافة تسبيح")
         
         self.delete_button = QPushButton()
-        self.delete_button.setIcon(qta.icon("fa.trash"))
+        self.delete_button.setIcon(qta.icon("fa5s.trash"))
         self.delete_button.setToolTip("حذف تسبيح")
         self.delete_button.setAccessibleName("حذف تسبيح")
         self.delete_button.setEnabled(False)
         
         self.incrementButton = QPushButton()
-        self.incrementButton.setIcon(qta.icon("fa.arrow-up"))
+        self.incrementButton.setIcon(qta.icon("fa5s.arrow-up"))
         self.incrementButton.setToolTip("زيادة العداد")
         self.incrementButton.setAccessibleName("زيادة العداد")
         self.incrementButton.setEnabled(False)
         
         self.decrementButton = QPushButton()
-        self.decrementButton.setIcon(qta.icon("fa.arrow-down"))
+        self.decrementButton.setIcon(qta.icon("fa5s.arrow-down"))
         self.decrementButton.setToolTip("إنقاص العداد")
         self.decrementButton.setAccessibleName("إنقاص العداد")
         self.decrementButton.setEnabled(False)
         
         self.resetButton = QPushButton()
-        self.resetButton.setIcon(qta.icon("fa.refresh"))
+        self.resetButton.setIcon(qta.icon("fa5s.sync"))
         self.resetButton.setToolTip("مسح العداد")
         self.resetButton.setAccessibleName("مسح العداد")
         self.resetButton.setEnabled(False)
         
         self.resetAllButton = QPushButton()
-        self.resetAllButton.setIcon(qta.icon("fa.undo"))
+        self.resetAllButton.setIcon(qta.icon("fa5s.undo"))
         self.resetAllButton.setToolTip("إعادة تعيين الكل")
         self.resetAllButton.setAccessibleName("إعادة تعيين الكل")
         self.resetAllButton.setEnabled(False)
         
         self.deleteAllButton = QPushButton()
-        self.deleteAllButton.setIcon(qta.icon("fa.trash-o"))
+        self.deleteAllButton.setIcon(qta.icon("fa5s.trash-alt"))
         self.deleteAllButton.setToolTip("حذف الكل")
         self.deleteAllButton.setAccessibleName("حذف الكل")
         self.deleteAllButton.setEnabled(False)
         
         self.close_button = QPushButton()
-        self.close_button.setIcon(qta.icon("fa.times"))
+        self.close_button.setIcon(qta.icon("fa5s.times"))
         self.close_button.setToolTip("إغلاق")
         self.close_button.setAccessibleName("إغلاق")
 
