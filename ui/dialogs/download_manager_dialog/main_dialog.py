@@ -291,6 +291,7 @@ class DownloadManagerDialog(QDialog):
 
         surahs = self.parent.quran_manager.get_surahs()
         reciter = self.current_reciters_manager.get_reciter(data.get("reciter_id"))
+        fmt_date = lambda v: v.strftime("%Y-%m-%d %H:%M") if v else "غير معروف"
 
         window_title = f"معلومات ملف {data.get('filename', 'غير معروف')}"
 
@@ -298,10 +299,10 @@ class DownloadManagerDialog(QDialog):
             "\n".join([
                 f"نوع العنصر: {'آية' if data.get('ayah_number') else 'سورة'}.",
                 f"اسم الملف: {data.get('filename', 'غير معروف')}.",
-                *( [f"حجم الملف: {data.get('size_text')}." ] if data.get('size_text') and not str(data.get('size_text')).startswith('0') else [] ),
+                *( [f"حجم الملف: {data.get('size_text')}." ] if data.get('total_bytes')  else [] ),
                 f"مسار الملف: {data.get('folder_path', 'غير معروف')}.",
-                f"تاريخ الإنشاء: {data.get('created_at').strftime('%Y-%m-%d %H:%M') if hasattr(data.get('created_at'), 'strftime') else (str(data.get('created_at'))[:16] if data.get('created_at') else 'غير معروف')}.",
-                f"تاريخ آخر تعديل: {data.get('updated_at').strftime('%Y-%m-%d %H:%M') if hasattr(data.get('updated_at'), 'strftime') else (str(data.get('updated_at'))[:16] if data.get('updated_at') else 'غير معروف')}.",
+                f"تاريخ الإنشاء: {fmt_date(data.get('created_at'))}.",
+                f"تاريخ آخر تعديل: {fmt_date(data.get('updated_at'))}.",
                 f"الحالة: {data.get('status').label if data.get('status') else 'غير معروف'}.",
                 *( [f"رقم الآية: {data.get('ayah_number')}." ] if data.get('ayah_number') else [] ),
                 f"رقم السورة: {data.get('surah_number', 'غير معروف')}.",
