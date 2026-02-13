@@ -85,8 +85,7 @@ class DownloadListModel(QAbstractListModel):
         progress: DownloadProgress = self._progress_cache.get(download_id)
 
         if role == Qt.ItemDataRole.DisplayRole:
-            surah_info = f"آية {ayah_number} من سورة {surah.name}" if ayah_number else f"سورة {surah.name}"
-            return f"{file_name}, {surah_info}, {reciter_display_text}, {status.label}"
+            return self._build_display_text(item_data, reciter_data, surah)
             
         elif role == Qt.ItemDataRole.ToolTipRole:
             return self._build_progress_text(progress, status, item_data)
@@ -195,6 +194,21 @@ class DownloadListModel(QAbstractListModel):
         self._progress_cache.clear()
         self._download_ids.clear()
         self.endResetModel()
+
+    def _build_display_text(self, item_data: dict, reciter_data: dict, surah: Surah) -> str:
+        file_name = item_data.get("filename", "ملف غير معروف")
+        status = item_data.get("status", DownloadStatus.ERROR)
+        reciter_text = reciter_data.get("display_text", "قارئ غير معروف")
+        ayah_number = item_data.get("ayah_number")
+
+        if ayah_number is None:
+            surah_info = f"سورة {surah.name}"
+        elif ayah_number == 0:
+            surah_info = f"بسملة من سورة {surah.name}"
+        else:
+            surah_info = f"آية {ayah_number} من سورة {surah.name}"
+
+        return f"{file_name}, {surah_info}, {reciter_text}, {status.label}"
 
     def _build_progress_text(self, progress: DownloadProgress, status: DownloadStatus, item_data: dict) -> str:
 
