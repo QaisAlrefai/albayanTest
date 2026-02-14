@@ -41,11 +41,14 @@ class AudioPlayerThread(QThread):
                     logger.debug(f"Playback started for: {self.url}")
                 except Exception as e:
                     message = ErrorMessage(e)
-                    logger.error(f"Error during playback: {message.title} - {message.body}", exc_info=True)
+                    logger.error(f"Error during playback: {message.log_message}", exc_info=True)
                     if self.send_error_signal:
                         self.error_signal.emit(message)
                         self.manually_stopped = True
                         logger.debug("Error signal emitted.")
+                    else:
+                        logger.debug("Error signal not emitted due to send_error_signal=False.")
+                        self.playback_finished.emit()
                 finally:
                     self.statusChanged.emit()
                     self.waiting_to_load.emit(True)

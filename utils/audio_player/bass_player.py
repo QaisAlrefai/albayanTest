@@ -75,7 +75,7 @@ class AudioPlayer:
                 return self.load_audio(source, attempts - 1)
                 logger.error(f"Failed to load audio: {source}. No more attempts left.")
             raise LoadFileError(source)
-        
+
         self.source = source
         self.set_channel_device(self.device)
         self.set_volume(self.volume) 
