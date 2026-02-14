@@ -473,41 +473,69 @@ class MenuBar(QMenuBar):
             logger.debug("Tafaseer menu closed.")
 
     def quit_application(self) -> bool:
-        logger.info("Quitting application.")
-        
-        # Check active downloads
+        logger.info("Quit requested.")
+
+        if getattr(self, "_is_quitting", False):
+            logger.debug("Quit already in progress. Ignoring duplicate call.")
+            return False
+
+        self._is_quitting = True
+
         if self.check_active_downloads():
-            if not Config.downloading.show_incomplete_download_warning:
-                logger.debug("Active downloads found, stopping all without confirmation due to settings.")
-            elif not self.confirm_stop_downloads():
-                logger.debug("Quit cancelled by user due to active downloads.")
-                return False
+            logger.debug("Active downloads detected.")
+
+            if Config.downloading.show_incomplete_download_warning:
+                if not self.confirm_stop_downloads():
+                    logger.debug("User cancelled quit due to active downloads.")
+                    self._is_quitting = False
+                    return False
+
+            logger.info("Stopping all active downloads.")
             self.stop_all_downloads()
 
         if Config.general.auto_save_position_enabled:
-            logger.debug("Auto-saving current position.")
+            logger.debug("Auto-saving current position before exit.")
             self.parent.OnSaveCurrentPosition()
-            logger.info("Current position auto-saved.")
-        logger.debug("Hiding tray icon.")
-        self.parent.tray_manager.hide_icon()
-        logger.info("Tray icon hidden.")
-        logger.debug("Closing Sura Player window if open.")
+
+        if hasattr(self.parent, "tray_manager"):
+            logger.debug("Hiding tray icon.")
+            try:
+                self.parent.tray_manager.hide_icon()
+            except Exception:
+                logger.exception("Failed to hide tray icon during quit.")
+
         if self.sura_player_window is not None:
-            self.sura_player_window.close()
-            logger.info("Sura Player window closed.")
-        logger.debug("Closing Download Manager dialog if open.")
+            logger.debug("Closing Sura Player window.")
+            try:
+                self.sura_player_window.close()
+            except Exception:
+                logger.exception("Failed to close Sura Player window during quit.")
+
         if hasattr(self, 'download_dialog') and self.download_dialog is not None:
-            self.download_dialog.close()
-            logger.info("Download Manager dialog closed.")
-        logger.debug("Freeing audio resources.")
-        bass.BASS_Free()
-        logger.info("Audio resources freed.")
-        logger.debug("Closing main window.")
-        QApplication.quit()
-        logger.info("Application quit.")
-        sys.exit(0)
-        
+            logger.debug("Closing Download Manager dialog.")
+            try:
+                self.download_dialog.close()
+            except Exception:
+                logger.exception("Failed to close Download Manager dialog during quit.")
+
+        try:
+            logger.debug("Freeing audio resources.")
+            bass.BASS_Free()
+        except Exception as e:
+            logger.error(f"Error freeing audio resources: {e}", exc_info=True)
+
+        logger.info("Cleanup completed successfully.")
+
+        # Ensure application event loop is quit so the process can exit cleanly.
+        try:
+            QApplication.instance().quit()
+        except Exception:
+            logger.exception("Failed to quit QApplication instance after cleanup.")
+
         return True
+
+
+
 
     def check_active_downloads(self) -> bool:
         """Check if any manager has active downloads."""

@@ -691,18 +691,43 @@ class QuranInterface(QMainWindow):
 
     def closeEvent(self, event):
         logger.debug("Close event triggered.")
-        if Config.general.run_in_background_enabled:
-            logger.debug("Running in background.")
+
+        # الحالة: تصغير إلى الخلفية
+        if Config.general.run_in_background_enabled and not getattr(self.menu_bar, "_is_quitting", False):
+            logger.debug("Run in background enabled. Minimizing to tray.")
             event.ignore()
             self.hide()
+
             icon_path = "Albayan.ico"
-            logger.debug(f"Showing notification.")
-            self.tray_manager.tray_icon.showMessage("البيان", "تم تصغير نافذة البيان على صينية النظام, البرنامج يعمل في الخلفية.", QIcon(icon_path), msecs=5000)
-            logger.debug("notification shown.")
+            try:
+                self.tray_manager.tray_icon.showMessage(
+                    "البيان",
+                    "تم تصغير نافذة البيان على صينية النظام, البرنامج يعمل في الخلفية.",
+                    QIcon(icon_path),
+                    msecs=5000
+                )
+            except Exception:
+                logger.exception("Failed to show tray notification.")
+
             logger.debug("App minimized to tray.")
+            return
+
+        # إذا الإغلاق تم بالفعل من quit_application
+        if getattr(self.menu_bar, "_is_quitting", False):
+            logger.debug("_is_quitting is True — accepting close event immediately.")
+            event.accept()
+            return
+
+        logger.debug("Attempting full shutdown (closeEvent).")
+
+        # استدعاء quit_application لمعالجة جميع التنظيفات
+        if self.menu_bar.quit_application():
+            logger.debug("Shutdown approved by quit_application. Accepting close event.")
+            event.accept()
         else:
-            if not self.menu_bar.quit_application():
-                event.ignore()
+            logger.debug("Shutdown cancelled by user. Ignoring close event.")
+            event.ignore()
+
 
     @exception_handler(ui_element=QMessageBox)
     def OnRandomMessages(self, event):
