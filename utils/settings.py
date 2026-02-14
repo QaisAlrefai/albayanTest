@@ -102,6 +102,7 @@ class DownloadingSettings(BaseSection):
     download_path: str = os.path.join(paths.documents_dir, "Downloads")
     show_incomplete_download_warning: bool = True
     offline_playback: bool = True
+    auto_refresh_downloads_lists: bool = False
 
 @dataclass
 class PreferencesSettings(BaseSection):

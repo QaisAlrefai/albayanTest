@@ -1,4 +1,4 @@
-
+from utils.settings import Config
 from PyQt6.QtCore import QSortFilterProxyModel, Qt, QModelIndex
 from core_functions.downloader.status import DownloadStatus
 from .download_model import DownloadListModel
@@ -39,3 +39,11 @@ class DownloadProxyModel(QSortFilterProxyModel):
                 return False
 
         return True
+
+def setDynamicSortFilter(self):
+    if Config.DownloadingSettings.auto_refresh_downloads_lists:
+        super().setDynamicSortFilter(True)
+    else:
+        super().setDynamicSortFilter(False)
+
+        

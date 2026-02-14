@@ -360,7 +360,7 @@ class SettingsDialog(QDialog):
 
         self.show_incomplete_download_warning_checkbox = QCheckBox("إظهار تحذير عند إغلاق البيان  في حال وجود ملفات لم يكتمل تنزيلها")
 
-
+        self.auto_refresh_downloads_lists_checkbox = QCheckBox("تحديث قوائم التنزيلات تلقائيا")
 
         self.group_downloading_layout.addWidget(self.files_to_download_at_the_same_time_label)  
         self.group_downloading_layout.addWidget(self.files_to_download_at_the_same_time_combo)
@@ -369,6 +369,7 @@ class SettingsDialog(QDialog):
         self.group_downloading_layout.addWidget(self.change_download_path_button)
         self.group_downloading_layout.addWidget(self.offline_playback_checkbox)
         self.group_downloading_layout.addWidget(self.show_incomplete_download_warning_checkbox)
+        self.group_downloading_layout.addWidget(self.auto_refresh_downloads_lists_checkbox)
         self.group_downloading_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
         self.group_downloading.setLayout(self.group_downloading_layout)
 
@@ -632,6 +633,7 @@ class SettingsDialog(QDialog):
         Config.downloading.download_path = self.download_path_edit.text()
         Config.downloading.show_incomplete_download_warning = self.show_incomplete_download_warning_checkbox.isChecked()
         Config.downloading.offline_playback = self.offline_playback_checkbox.isChecked()
+        Config.downloading.auto_refresh_downloads_lists = self.auto_refresh_downloads_lists_checkbox.isChecked()
 
 
         Config.search.ignore_tashkeel = self.ignore_tashkeel_checkbox.isChecked()
@@ -687,6 +689,7 @@ class SettingsDialog(QDialog):
         self.download_path_edit.setText(Config.downloading.download_path)
         self.show_incomplete_download_warning_checkbox.setChecked(Config.downloading.show_incomplete_download_warning)
         self.offline_playback_checkbox.setChecked(Config.downloading.offline_playback)
+        self.auto_refresh_downloads_lists_checkbox.setChecked(Config.downloading.auto_refresh_downloads_lists)
         self.ignore_tashkeel_checkbox.setChecked(Config.search.ignore_tashkeel)
         self.ignore_hamza_checkbox.setChecked(Config.search.ignore_hamza)
         self.match_whole_word_checkbox.setChecked(Config.search.match_whole_word)
