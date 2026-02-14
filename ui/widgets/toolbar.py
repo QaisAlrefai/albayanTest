@@ -119,6 +119,7 @@ class AudioToolBar(QToolBar):
         self.navigation = NavigationManager(self.parent, self.parent.quran_manager)
         self.audio_thread = AudioPlayerThread(self.player, self.parent)
         self.current_repeat = 0
+        self.play_cycle_index = 0
         self.last_played_position = (None, None)
         logger.debug("AudioToolBar initialized.")
 
@@ -153,6 +154,18 @@ class AudioToolBar(QToolBar):
         self.addWidget(slider)
         return slider
 
+    def get_active_reciter(self):
+        primary = Config.listening.reciter
+        secondary = getattr(Config.listening, "secondary_reciter", 0)
+        if secondary and secondary != 0:
+            if self.play_cycle_index % 2 == 1:
+                logger.debug("Using secondary reciter.")
+                return secondary
+
+        logger.debug("Using primary reciter.")
+        return primary
+
+
     def toggle_play_pause(self):
         if self.player.is_playing():
             self.player.pause()
@@ -167,6 +180,7 @@ class AudioToolBar(QToolBar):
         if current_ayah.number_in_surah != 0:
             if self.last_played_position != (current_ayah.sura_number, current_ayah.number_in_surah):
                 self.current_repeat = 0
+                self.play_cycle_index = 0
                 logger.debug("New Ayah detected, resetting current_repeat to 0.")
             else:
                 logger.debug("Same Ayah as last played, current_repeat not reset.")
@@ -182,6 +196,7 @@ class AudioToolBar(QToolBar):
     def stop_audio(self):
         logger.debug("Stopping audio playback.")
         self.current_repeat = 0
+        self.play_cycle_index = 0
         self.audio_thread.manually_stopped = True
         self.player.stop()
         self.set_buttons_status()
@@ -197,11 +212,12 @@ class AudioToolBar(QToolBar):
         elif self.navigation.current_ayah > 1:
             self.navigation.has_basmala = False
 
-        reciter_id = Config.listening.reciter
+        reciter_id = self.get_active_reciter()
         url = self.reciters.get_url(reciter_id, self.navigation.current_surah, self.navigation.current_ayah, offline_playback=Config.downloading.offline_playback)
         logger.debug(f"Generated URL: {url}")
         self.audio_thread.set_audio_url(url, send_error_signal=False if self.navigation.current_ayah == 0 else True)
         self.audio_thread.start()
+
         self.set_buttons_status()
         logger.debug("Audio playback started.")
 
@@ -247,6 +263,7 @@ class AudioToolBar(QToolBar):
         elif repeat_count > 0 and action_after_listening != 1:
             if self.current_repeat < repeat_count - 1:
                 self.current_repeat += 1
+                self.play_cycle_index += 1
                 logger.debug(f"Repeating Ayah: repeat {self.current_repeat}/{repeat_count}")
                 self.play_current_ayah()
                 return
