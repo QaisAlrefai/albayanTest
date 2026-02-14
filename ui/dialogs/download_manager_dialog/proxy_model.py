@@ -8,7 +8,7 @@ class DownloadProxyModel(QSortFilterProxyModel):
         super().__init__(parent)
         self.filter_status = None
         self.filter_string = ""
-
+        self.setDynamicSortFilter(self.dynamicSortFilter())
 
     def set_status_filter(self, status: DownloadStatus):
         self.filter_status = status
@@ -40,10 +40,5 @@ class DownloadProxyModel(QSortFilterProxyModel):
 
         return True
 
-def setDynamicSortFilter(self):
-    if Config.DownloadingSettings.auto_refresh_downloads_lists:
-        super().setDynamicSortFilter(True)
-    else:
-        super().setDynamicSortFilter(False)
-
-        
+    def dynamicSortFilter(self) -> bool:
+        return Config.downloading.auto_refresh_downloads_lists
