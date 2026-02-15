@@ -83,7 +83,7 @@ class AudioPlayer:
         if end_callback is not None:
             self.sync_callback = SYNCPROC(lambda handle, channel, data, user: end_callback())
             bass.BASS_ChannelSetSync(self.current_channel, BassSyncFlag.END | BassSyncFlag.THREAD, 0, self.sync_callback, None)
-            print("Set end callback.")
+
 
         logger.info(f"Successfully loaded: {source}, {self.volume}, {self.device}.")
 
