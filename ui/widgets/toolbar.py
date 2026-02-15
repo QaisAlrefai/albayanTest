@@ -281,9 +281,8 @@ class AudioToolBar(QToolBar):
             self.OnPlayNext()
             logger.debug("Playing next Ayah after listening.")
         elif action_after_listening == 1:
-            self.play_cycle_index += 1
             self.play_current_ayah()
-            logger.debug(f"Repeating current Ayah with alternating reciter, cycle={self.play_cycle_index}")
+            logger.debug("Playingcurrent Ayah after listening.")
 
     def change_volume(self, value: int) -> None:
         logger.debug(f"Changing ayah volume.")
