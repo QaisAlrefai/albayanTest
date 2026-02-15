@@ -62,7 +62,6 @@ class AudioSettings(BaseSection):
 class ListeningSettings(BaseSection):
     SECTION_NAME: ClassVar[str] = "listening"
     reciter: int = 58
-    secondary_reciter: int = 0
     action_after_listening: int = 0
     ayah_repeat_count: int = 0
     action_after_text: int = 0
