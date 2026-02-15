@@ -119,6 +119,7 @@ class AudioToolBar(QToolBar):
         self.navigation = NavigationManager(self.parent, self.parent.quran_manager)
         self.audio_thread = AudioPlayerThread(self.player, self.parent)
         self.current_repeat = 0
+        self.play_cycle_index = 0
         self.last_played_position = (None, None)
         logger.debug("AudioToolBar initialized.")
 
@@ -153,6 +154,18 @@ class AudioToolBar(QToolBar):
         self.addWidget(slider)
         return slider
 
+    def get_active_reciter(self):
+        primary = Config.listening.reciter
+        secondary = getattr(Config.listening, "secondary_reciter", 0)
+        if secondary and secondary != 0:
+            if self.play_cycle_index % 2 == 1:
+                logger.debug("Using secondary reciter.")
+                return secondary
+
+        logger.debug("Using primary reciter.")
+        return primary
+
+
     def toggle_play_pause(self):
         if self.player.is_playing():
             self.player.pause()
@@ -167,6 +180,7 @@ class AudioToolBar(QToolBar):
         if current_ayah.number_in_surah != 0:
             if self.last_played_position != (current_ayah.sura_number, current_ayah.number_in_surah):
                 self.current_repeat = 0
+                self.play_cycle_index = 0
                 logger.debug("New Ayah detected, resetting current_repeat to 0.")
             else:
                 logger.debug("Same Ayah as last played, current_repeat not reset.")
@@ -182,6 +196,7 @@ class AudioToolBar(QToolBar):
     def stop_audio(self):
         logger.debug("Stopping audio playback.")
         self.current_repeat = 0
+        self.play_cycle_index = 0
         self.audio_thread.manually_stopped = True
         self.player.stop()
         self.set_buttons_status()
@@ -197,23 +212,35 @@ class AudioToolBar(QToolBar):
         elif self.navigation.current_ayah > 1:
             self.navigation.has_basmala = False
 
-        reciter_id = Config.listening.reciter
+        reciter_id = self.get_active_reciter()
         url = self.reciters.get_url(reciter_id, self.navigation.current_surah, self.navigation.current_ayah, offline_playback=Config.downloading.offline_playback)
         logger.debug(f"Generated URL: {url}")
         self.audio_thread.set_audio_url(url, send_error_signal=False if self.navigation.current_ayah == 0 else True)
         self.audio_thread.start()
+
         self.set_buttons_status()
         logger.debug("Audio playback started.")
 
-    def OnPlayNext(self) -> None:
+    def OnPlayNext(self, preserve_cycle: bool = False) -> None:
         logger.debug("Playing next Ayah.")
+        
+        current_cycle_index = self.play_cycle_index
+        
         self.stop_audio()
+        
+        if preserve_cycle:
+            self.play_cycle_index = current_cycle_index
+        else:
+            self.play_cycle_index = 0
+
         if self.navigation.navigate("next"):
             if self.navigation.current_ayah != 0:
                 self.last_played_position = (self.navigation.current_surah, self.navigation.current_ayah)
+            
             self.play_current_ayah()
             self.change_ayah_focus()
             logger.debug("Next Ayah played.")
+
 
     def OnPlayPrevious(self) -> None:
         logger.debug("Playing previous Ayah.")
@@ -240,32 +267,46 @@ class AudioToolBar(QToolBar):
     def OnActionAfterListening(self):
         logger.debug("Action after listening triggered.")
         self.set_buttons_status()
+        
         repeat_count = Config.listening.ayah_repeat_count
-        action_after_listening = Config.listening.action_after_listening
-        if self.navigation.current_ayah == 0:
-            logger.debug("Current Ayah is 0, skipping repeat logic.")
-        elif repeat_count > 0 and action_after_listening != 1:
-            if self.current_repeat < repeat_count - 1:
-                self.current_repeat += 1
-                logger.debug(f"Repeating Ayah: repeat {self.current_repeat}/{repeat_count}")
-                self.play_current_ayah()
-                return
-                
-            else:
-                self.current_repeat = 0
+        action_after_listening = Config.listening.action_after_listening # 1: تكرار مستمر، 2: انتقال للتالية
+        
+        switch_on_repeat = Config.listening.use_secondary_reciter_when_repeating
+        switch_on_move = Config.listening.use_secondary_reciter_when_moving
+        secondary_exists = getattr(Config.listening, "secondary_reciter", 0) != 0
+
+        should_repeat = False
+
 
         if self.navigation.current_ayah != 0:
-            if self.last_played_position != (self.navigation.current_surah, self.navigation.current_ayah):
-                logger.debug("New Ayah detected after listening, resetting current_repeat to 0.")
-                self.last_played_position = (self.navigation.current_surah, self.navigation.current_ayah)
+            if repeat_count > 0 and self.current_repeat < repeat_count - 1 and action_after_listening != 1:
+                self.current_repeat += 1
+                should_repeat = True
+            elif action_after_listening == 1:
+                should_repeat = True
+
+        if should_repeat:
+            if secondary_exists and switch_on_repeat:
+                self.play_cycle_index += 1
+            else:
+                pass
+            
+            self.play_current_ayah()
+            return
+
+
+        self.current_repeat = 0 
 
         if action_after_listening == 2 or self.navigation.current_ayah == 0:
+            if secondary_exists and switch_on_move:
+                self.play_cycle_index = 1 if self.play_cycle_index % 2 == 0 else 0
+            else:
+                self.play_cycle_index = 0
+
             self.navigation.has_basmala = True if self.navigation.current_ayah < 2 else False
-            self.OnPlayNext()
+            self.OnPlayNext(preserve_cycle=True)            
             logger.debug("Playing next Ayah after listening.")
-        elif action_after_listening == 1:
-            self.play_current_ayah()
-            logger.debug("Playingcurrent Ayah after listening.")
+
 
     def change_volume(self, value: int) -> None:
         logger.debug(f"Changing ayah volume.")

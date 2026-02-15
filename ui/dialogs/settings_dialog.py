@@ -198,10 +198,26 @@ class SettingsDialog(QDialog):
         self.reciters_label = QLabel("القارئ:")
         self.reciters_combo = QComboBox()
         self.reciters_combo.setAccessibleName(self.reciters_label.text())
+
+
+        self.secondary_reciter_label = QLabel("القارئ الثانوي:")
+        self.secondary_reciter_combo = QComboBox()
+        self.secondary_reciter_combo.setAccessibleName(self.secondary_reciter_label.text())
+
+
         reciters = self.reciters_manager.get_reciters()
-        for  row in reciters:
+        for row in reciters:
             display_text = f"{row['name']} - {row['rewaya']} - {row['type']} - ({row['bitrate']} kbps)"
             self.reciters_combo.addItem(display_text, row["id"])
+        self.secondary_reciter_combo.addItem("معطل", 0)
+        for row in reciters:
+            display_text = f"{row['name']} - {row['rewaya']} - {row['type']} - ({row['bitrate']} kbps)"
+            self.secondary_reciter_combo.addItem(display_text, row["id"])
+
+
+        self.sswitch_when_moving_checkbox = QCheckBox("تبديل القارئ عند الانتقال إلى الآية التالية تلقائيًا")
+
+        self.sswitch_when_repeating_checkbox = QCheckBox("تبديل القارئ عند تكرار الآية تلقائيًا")
 
 
 
@@ -245,6 +261,10 @@ class SettingsDialog(QDialog):
 
         self.group_listening_layout.addWidget(self.reciters_label)
         self.group_listening_layout.addWidget(self.reciters_combo)
+        self.group_listening_layout.addWidget(self.secondary_reciter_label)
+        self.group_listening_layout.addWidget(self.secondary_reciter_combo)
+        self.group_listening_layout.addWidget(self.sswitch_when_moving_checkbox)
+        self.group_listening_layout.addWidget(self.sswitch_when_repeating_checkbox)
         self.group_listening_layout.addSpacerItem(QSpacerItem(20, 5, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))  # مسافة نتوسطة
         self.group_listening_layout.addWidget(self.repeat_limit_label)
         self.group_listening_layout.addWidget(self.repeat_limit_spinbox)
@@ -600,6 +620,9 @@ class SettingsDialog(QDialog):
         Config.audio.athkar_device = self.athkar_device_combo.currentData()
 
         Config.listening.reciter = self.reciters_combo.currentData()
+        Config.listening.secondary_reciter = self.secondary_reciter_combo.currentData()
+        Config.listening.use_secondary_reciter_when_moving = self.sswitch_when_moving_checkbox.isChecked()
+        Config.listening.use_secondary_reciter_when_repeating = self.sswitch_when_repeating_checkbox.isChecked()
         Config.listening.action_after_listening = self.action_combo.currentData()
         Config.listening.forward_time = self.duration_spinbox.value()
         Config.listening.ayah_repeat_count = self.repeat_limit_spinbox.value()
@@ -673,6 +696,8 @@ class SettingsDialog(QDialog):
         self.player_in_background_checkbox.setChecked(Config.surah_player.play_surah_in_background_enabled)
         self.auto_move_focus_checkbox.setChecked(Config.listening.auto_move_focus)
         self.auto_play_checkbox.setChecked(Config.listening.auto_play_ayah_after_go_to)
+        self.sswitch_when_moving_checkbox.setChecked(Config.listening.use_secondary_reciter_when_moving)
+        self.sswitch_when_repeating_checkbox.setChecked(Config.listening.use_secondary_reciter_when_repeating)
         self.download_path_edit.setText(Config.downloading.download_path)
         self.show_incomplete_download_warning_checkbox.setChecked(Config.downloading.show_incomplete_download_warning)
         self.offline_playback_checkbox.setChecked(Config.downloading.offline_playback)
@@ -684,6 +709,7 @@ class SettingsDialog(QDialog):
         combo_config = [
             (self.log_levels_combo, Config.general.log_level),
             (self.reciters_combo, Config.listening.reciter),
+            (self.secondary_reciter_combo, Config.listening.secondary_reciter),
             (self.action_combo, Config.listening.action_after_listening),
         (self.action_after_text_combo    , Config.listening.action_after_text),
             (self.font_type_combo, QuranFontType.from_int(Config.reading.font_type)),
