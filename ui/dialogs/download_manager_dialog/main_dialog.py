@@ -59,7 +59,8 @@ class DownloadManagerDialog(QDialog):
 
 
         self.setWindowTitle("مدير التنزيلات")
-        self.setMinimumWidth(520)
+        self.setMinimumWidth(620)
+        self.setMinimumHeight(500)
 
         self._setup_ui()
         self.set_shortcuts()
