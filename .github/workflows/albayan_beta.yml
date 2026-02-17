@@ -1,4 +1,4 @@
-# This workflow will install Python dependencies and build the Albayan application using cx-Freeze on Windows.
+# This workflow installs dependencies and builds Albayan using cx-Freeze on Windows
 
 name: Albayan_beta
 
@@ -16,39 +16,53 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v4
+    - name: Set up Python 3.13 (latest patch)
+      uses: actions/setup-python@v5
       with:
-        python-version: "3.12"
+        python-version: "3.13"
 
-    - name: Install dependencies
+    - name: Upgrade pip and install dependencies
+      shell: pwsh
       run: |
         python -m pip install --upgrade pip
-        pip install cx-Freeze
-        if (Test-Path "requirements.txt") { pip install -r requirements.txt }
+        pip install --upgrade cx-Freeze
+        if (Test-Path "requirements.txt") {
+            pip install -r requirements.txt
+        }
 
     - name: Build with cx-Freeze
+      shell: pwsh
       run: |
         python setup.py build
 
-    
-    - name: Download and install Inno Setup
+    - name: Remove markdown documentation files
+      shell: pwsh
+      run: |
+        $docPath = "albayan_build\documentation"
+        if (Test-Path $docPath) {
+            Remove-Item "$docPath\UserGuide.md" -ErrorAction SilentlyContinue
+            Remove-Item "$docPath\WhatsNew.md" -ErrorAction SilentlyContinue
+        }
+
+    - name: Download and install latest Inno Setup
+      shell: pwsh
       run: |
         Invoke-WebRequest -Uri https://jrsoftware.org/download.php/is.exe -OutFile is.exe
-        Start-Process -Wait -FilePath .\is.exe -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP'
-
-    - name: Download Arabic and Vietnamese language files
-      run: |
-        Invoke-WebRequest -Uri https://raw.githubusercontent.com/jrsoftware/issrc/refs/heads/main/Files/Languages/Arabic.isl -OutFile "C:\Program Files (x86)\Inno Setup 6\Languages\Arabic.isl"
-        Invoke-WebRequest -Uri https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Unofficial/Vietnamese.isl -OutFile "C:\Program Files (x86)\Inno Setup 6\Languages\Vietnamese.isl"
+        Start-Process -Wait -FilePath .\is.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP'
 
     - name: Package with Inno Setup
+      shell: pwsh
       run: |
-        Start-Process -Wait -FilePath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" -ArgumentList "albayan.iss"
-        
-    - name: Upload compressed build output
+        $isccPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+        if (!(Test-Path $isccPath)) {
+            $isccPath = "C:\Program Files\Inno Setup 6\ISCC.exe"
+        }
+        Start-Process -Wait -FilePath $isccPath -ArgumentList "albayan.iss"
+
+    - name: Upload installer artifact
       uses: actions/upload-artifact@v4
       with:
         name: albayan-beta-build
