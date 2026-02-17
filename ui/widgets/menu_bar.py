@@ -518,8 +518,8 @@ class MenuBar(QMenuBar):
         msg_box = QMessageBox(self.parent)
         msg_box.setIcon(QMessageBox.Icon.Warning)
         msg_box.setWindowTitle("تأكيد الخروج")
-        msg_box.setText("هناك تنزيلات قيد التشغيل. هل تريد حقًا الخروج وإيقافها؟")
-        yes_button = msg_box.addButton("خروج", QMessageBox.ButtonRole.AcceptRole)
+        msg_box.setText("توجد عمليات تنزيل لم تكتمل بعد. سيؤدي الخروج إلى إيقافها. هل تريد المتابعة؟")
+        yes_button = msg_box.addButton("إيقاف التنزيل والخروج", QMessageBox.ButtonRole.AcceptRole)
         msg_box.addButton("إلغاء", QMessageBox.ButtonRole.RejectRole)
         msg_box.exec()
         return msg_box.clickedButton() == yes_button

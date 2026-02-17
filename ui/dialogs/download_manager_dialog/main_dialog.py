@@ -243,8 +243,8 @@ class DownloadManagerDialog(QDialog):
         open_file_action = menu.addAction("تشغيل في المشغل الافتراضي", lambda: self.open_in_default_player(file_path))
         open_folder = menu.addAction("فتح في المجلد", lambda: self.open_containing_folder(file_path))
         menu.addSeparator()
-        pause_action = menu.addAction("إيقاف مؤقت", self.pause_current_item)
-        pause_all_action = menu.addAction("إيقاف تنزيل الكل", self.pause_all)
+        pause_action = menu.addAction("إيقاف التنزيل مؤقتًا", self.pause_current_item)
+        pause_all_action = menu.addAction("إيقاف تنزيل الكل مؤقتًا", self.pause_all)
         resume_action = menu.addAction("استئناف", lambda: self.current_manager.resume(download_id))
         resume_all = menu.addAction("استئناف تنزيل الكل", self.current_manager.resume_all)
         start_action = menu.addAction("إعادة المحاولة" if current_status == DownloadStatus.ERROR else "بدء التنزيل", self.restart_current_item)
@@ -252,9 +252,9 @@ class DownloadManagerDialog(QDialog):
         cancel_action = menu.addAction("إلغاء التنزيل", self.cancel_current_item)
         cancel_all_action = menu.addAction("إلغاء تنزيل الكل", self.cancel_all)
         menu.addSeparator()
-        delete_action = menu.addAction("حذف العنصر المحدد", self.delete_selected_item)
+        delete_action = menu.addAction("حذف الملف المحدد", self.delete_selected_item)
         delete_all_action = menu.addAction("حذف الكل", self.delete_all)
-        info_action = menu.addAction("معلومات العنصر المحدد", self.show_selected_item_info)
+        info_action = menu.addAction("معلومات الملف المحدد", self.show_selected_item_info)
 
         # status of actions based on current status
         open_file_action.setEnabled(file_path.exists() and current_status == DownloadStatus.COMPLETED)
@@ -333,15 +333,15 @@ class DownloadManagerDialog(QDialog):
 
         if self.user_message_service.confirm(
             "تأكيد الحذف",
-            f"هل أنت متأكد من حذف العنصر التالي؟\n\n{self.current_download_title}"
+            f"هل أنت متأكد أنك تريد حذف الملف التالي؟\n\n{self.current_download_title}"
         ):
             self.current_manager.delete(download_id)
-            UniversalSpeech.say("تم حذف العنصر المحدد.")
+            UniversalSpeech.say("تم حذف الملف المحدد.")
 
     def delete_by_status(self, status, status_label):
         if not self.user_message_service.confirm(
             "تأكيد الحذف",
-            f"هل تريد حذف العناصر {status_label}؟",
+            f"هل تريد حذف الملفات {status_label}ة؟",
         ):
             return
 
@@ -364,7 +364,7 @@ class DownloadManagerDialog(QDialog):
     def cancel_current_item(self):
         if self.user_message_service.confirm(
             "تأكيد إلغاء التنزيل",
-            f"هل أنت متأكد من إلغاء تنزيل العنصر التالي؟\n\n{self.current_download_title}"
+            f"هل أنت متأكد أنك تريد إلغاء تنزيل الملف التالي؟\n\n{self.current_download_title}"
         ):
             self.current_manager.cancel(self.current_download_id)
             UniversalSpeech.say("تم إلغاء تنزيل الملف.")
@@ -402,7 +402,7 @@ class DownloadManagerDialog(QDialog):
     def cancel_all(self):
         if self.user_message_service.confirm(
             "تأكيد إلغاء الكل",
-            "هل أنت متأكد من إلغاء جميع التنزيلات؟",
+            "هل أنت متأكد أنك تريد إلغاء جميع التنزيلات؟",
         ):
             self.current_manager.cancel_all()
             self.proxy_model.invalidateFilter()
@@ -486,7 +486,7 @@ class DownloadManagerDialog(QDialog):
     def delete_all(self):
         if self.user_message_service.confirm(
             "تأكيد حذف الكل",
-            "هل أنت متأكد من حذف جميع العناصر؟",
+            "هل أنت متأكد أنك تريد حذف كل التنزيلات؟",
         ):
             self.current_manager.delete_all()
             UniversalSpeech.say("تم حذف جميع العناصر.")
