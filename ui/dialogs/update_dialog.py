@@ -17,7 +17,8 @@ from PyQt6.QtGui import QKeySequence, QShortcut
 from core_functions.downloader import DownloadManager
 from core_functions.downloader.status import DownloadProgress
 from ui.widgets.qText_edit import ReadOnlyTextEdit
-from utils.const import program_name
+from utils.const import program_name, Globals
+from utils.universal_speech import UniversalSpeech
 from utils.paths import paths
 from utils.logger import LoggerManager
 import qtawesome as qta
@@ -45,6 +46,10 @@ class UpdateDialog(QDialog):
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         logger.debug(f"Opening update dialog for version {latest_version}")
 
+        self.latest_version = latest_version
+        self.label1_text = "{} الإصدار {} متاح.".format(program_name, latest_version)
+        self.label2_text = "ما الجديد في الإصدار {}؟".format(latest_version)
+
         layout = QVBoxLayout()
 
         self.groupBox = QGroupBox(self)
@@ -52,8 +57,8 @@ class UpdateDialog(QDialog):
 
         group_layout = QVBoxLayout(self.groupBox)
 
-        label1 = QLabel("{} الإصدار {} متاح.".format(program_name, latest_version), self.groupBox)
-        label2 = QLabel("ما الجديد في الإصدار {}؟".format(latest_version), self.groupBox)
+        label1 = QLabel(self.label1_text, self.groupBox)
+        label2 = QLabel(self.label2_text, self.groupBox)
 
         self.release_notes_edit = ReadOnlyTextEdit(self.groupBox)
         self.release_notes_edit.setAccessibleName(label2.text())
@@ -70,6 +75,11 @@ class UpdateDialog(QDialog):
         self.update_button.setDefault(True)
         self.update_button.setIcon(qta.icon("mdi.update"))
 
+        self.copy_button = QPushButton("نسخ معلومات التحديث")
+        self.copy_button.setIcon(qta.icon("fa5s.copy"))
+        self.copy_button.setShortcut(QKeySequence("Shift+C"))
+        self.copy_button.clicked.connect(self.copy_update_info)
+
         self.cancel_button = QPushButton("إلغاء")
         self.cancel_button.setShortcut(QKeySequence("Ctrl+W"))
         self.cancel_button.setIcon(qta.icon("fa5s.times"))
@@ -80,6 +90,7 @@ class UpdateDialog(QDialog):
         close_shortcut.activated.connect(self.reject)
 
         buttons_layout.addWidget(self.update_button)
+        buttons_layout.addWidget(self.copy_button)
         buttons_layout.addWidget(self.cancel_button)
         layout.addLayout(buttons_layout)
 
@@ -133,3 +144,25 @@ class UpdateDialog(QDialog):
     def closeEvent(self, event):
         logger.debug("Close event triggered.")
         return super().closeEvent(event)
+
+
+    def copy_update_info(self):
+        logger.debug("User requested to copy update information.")
+
+        release_notes_text = self.release_notes_edit.toPlainText()
+
+        final_text = (
+            f"{self.label1_text}\n"
+            f"{self.label2_text}\n\n"
+            f"{release_notes_text}"
+        )
+
+        clipboard = QApplication.clipboard()
+        clipboard.setText(final_text)
+
+        UniversalSpeech.say(
+            f"تم نسخ معلومات التحديث للإصدار {self.latest_version}."
+        )
+
+        Globals.effects_manager.play("copy")
+        logger.info("Update information copied successfully.")
